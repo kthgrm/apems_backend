@@ -53,8 +53,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('awards', AwardController::class);
     Route::apiResource('impact-assessments', ImpactAssessmentController::class);
+
     Route::apiResource('international-partners', IntlPartnerController::class);
+    Route::patch('international-partners/{internationalPartner}/archive', [IntlPartnerController::class, 'archive'])
+        ->name('international-partners.archive');
+
     Route::apiResource('modalities', ModalityController::class);
+
     Route::apiResource('resolutions', ResolutionController::class);
     Route::patch('resolutions/{resolution}/archive', [ResolutionController::class, 'archive'])
         ->name('resolutions.archive');

@@ -85,30 +85,6 @@ class TechTransfer extends Model
     }
 
     /**
-     * Scope for active tech transfers.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_archived', false);
-    }
-
-    /**
-     * Scope for archived tech transfers.
-     */
-    public function scopeArchived($query)
-    {
-        return $query->where('is_archived', true);
-    }
-
-    /**
-     * Scope for tech transfers by status.
-     */
-    public function scopeByStatus($query, $status)
-    {
-        return $query->where('status', $status);
-    }
-
-    /**
      * Get the duration of the tech transfer in days.
      */
     public function getDurationAttribute()

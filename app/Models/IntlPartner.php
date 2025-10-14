@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class IntlPartner extends Model
 {
     protected $fillable = [
-        'campus_college_id',
         'agency_partner',
         'location',
         'activity_conducted',
@@ -29,4 +28,14 @@ class IntlPartner extends Model
         'number_of_committee' => 'integer',
         'is_archived' => 'boolean',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function college()
+    {
+        return $this->belongsTo(College::class);
+    }
 }

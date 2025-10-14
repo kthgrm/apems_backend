@@ -19,9 +19,17 @@ class CampusController extends Controller
     {
         try {
             $campuses = Campus::with('colleges')
-                ->withCount(['techTransfers as tech_transfers_count' => function ($query) {
-                    $query->where('is_archived', false);
-                }])
+                ->withCount([
+                    'techTransfers as tech_transfers_count' => function ($query) {
+                        $query->where('is_archived', false);
+                    },
+                    'awards as awards_count' => function ($query) {
+                        $query->where('is_archived', false);
+                    },
+                    'intlPartners as intl_partners_count' => function ($query) {
+                        $query->where('is_archived', false);
+                    },
+                ])
                 ->get();
 
             return response()->json([

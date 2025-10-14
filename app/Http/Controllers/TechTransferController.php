@@ -162,10 +162,10 @@ class TechTransferController extends Controller
      * Display the specified tech transfer.
      * GET /api/tech-transfers/{techTransfer}
      */
-    public function show(Request $request, TechTransfer $techTransfer): JsonResponse
+    public function show(TechTransfer $techTransfer): JsonResponse
     {
         try {
-            $techTransfer->load(['user', 'college', 'college.campus', 'impactAssessments', 'modalities']);
+            $techTransfer->load(['user', 'college', 'college.campus']);
 
             return response()->json([
                 'success' => true,
@@ -235,7 +235,7 @@ class TechTransferController extends Controller
             }
 
             $techTransfer->update($validatedData);
-            $techTransfer->load(['user', 'college']);
+            $techTransfer->load(['user', 'college', 'college.campus']);
 
             return response()->json([
                 'success' => true,
@@ -284,7 +284,7 @@ class TechTransferController extends Controller
         $user = $request->user();
 
         // Check if user is admin
-        if ($user->role !== 'admin' || $user->id !== $techTransfer->user_id) {
+        if ($user->role !== 'admin' && $user->id !== $techTransfer->user_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized action'

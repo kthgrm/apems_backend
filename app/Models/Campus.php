@@ -40,4 +40,20 @@ class Campus extends Model
     {
         return $this->hasManyThrough(TechTransfer::class, College::class);
     }
+
+    /**
+     * Get the intl partners for this campus.
+     */
+    public function intlPartners()
+    {
+        return $this->hasManyThrough(IntlPartner::class, College::class);
+    }
+
+    /**
+     * Get the awards for this campus.
+     */
+    public function awards()
+    {
+        return $this->hasManyThrough(Award::class, College::class);
+    }
 }
