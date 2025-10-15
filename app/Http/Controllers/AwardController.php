@@ -4,47 +4,132 @@ namespace App\Http\Controllers;
 
 use App\Models\Award;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class AwardController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * GET /api/awards-recognition
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-    }
+        try {
+            $query = Award::with(['user', 'college', 'college.campus'])->where('is_archived', false);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+            // Filter by user if provided
+            if ($request->has('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            if ($request->has('campus')) {
+                // tech_transfers table does not have a campus_id column.
+                // Filter by campus through the related college instead.
+                $campusId = $request->campus;
+                $query->whereHas('college', function ($q) use ($campusId) {
+                    $q->where('campus_id', $campusId);
+                });
+            }
+
+            // Filter by college if provided
+            if ($request->has('college_id')) {
+                $query->where('college_id', $request->college_id);
+            }
+
+            $partners = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $partners,
+                'message' => 'International partners retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve tech transfers',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Store a newly created resource in storage.
+     * POST /api/awards
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $validatedData = $request->validate([
+                'award_name' => 'required|string|max:255',
+                'description' => 'required|string',
+                'date_received' => 'required|date',
+                'event_details' => 'required|string',
+                'location' => 'required|string|max:255',
+                'awarding_body' => 'required|string|max:255',
+                'people_involved' => 'nullable|string|max:255',
+                'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
+                'attachment_link' => 'nullable|url|max:255',
+            ]);
+
+            $user = $request->user();
+            $validatedData['user_id'] = $user->id;
+            $validatedData['college_id'] = $user->college_id;
+
+            // Handle multiple file uploads
+            if ($request->hasFile('attachments')) {
+                $attachmentPaths = [];
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('award-attachments', 'spaces');
+                    $attachmentPaths[] = $path;
+                }
+                $validatedData['attachment_paths'] = $attachmentPaths;
+            }
+
+            $award = Award::create($validatedData);
+            $award->load(['user', 'college', 'college.campus']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $award,
+                'message' => 'Award created successfully'
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create award',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Display the specified resource.
+     * GET /api/awards-recognition/{award}
      */
     public function show(Award $award)
     {
-        //
-    }
+        try {
+            $award->load(['user', 'college', 'college.campus']);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Award $award)
-    {
-        //
+            return response()->json([
+                'success' => true,
+                'data' => $award,
+                'message' => 'Award retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve award',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -52,14 +137,103 @@ class AwardController extends Controller
      */
     public function update(Request $request, Award $award)
     {
-        //
+        $validatedData = $request->validate([
+            'award_name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'date_received' => 'required|date',
+            'event_details' => 'required|string',
+            'location' => 'required|string|max:255',
+            'awarding_body' => 'required|string|max:255',
+            'people_involved' => 'nullable|string|max:255',
+            'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
+            'attachment_link' => 'nullable|url|max:255',
+        ]);
+
+        try {
+            // Handle multiple file uploads for update
+            if ($request->hasFile('attachments')) {
+                // Delete old attachments if they exist
+                if ($award->attachment_paths) {
+                    foreach ($award->attachment_paths as $oldPath) {
+                        if (Storage::disk('spaces')->exists($oldPath)) {
+                            Storage::disk('spaces')->delete($oldPath);
+                        }
+                    }
+                }
+
+                // Upload new attachments
+                $attachmentPaths = [];
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('award-attachments', 'spaces');
+                    $attachmentPaths[] = $path;
+                }
+                $award->attachment_paths = $attachmentPaths;
+            }
+
+            $award->update($validatedData);
+            $award->load(['user', 'college', 'college.campus']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $award,
+                'message' => 'International partner updated successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update international partner',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Archive the specified resource.
+     * PATCH /api/awards-recognition/{award}/archive
      */
-    public function destroy(Award $award)
+    public function archive(Award $award, Request $request)
     {
-        //
+        // Validate password presence
+        if (! $request->filled('password')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password is required'
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Check provided password against authenticated user's password
+        if (! Hash::check($request->input('password'), $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password does not match'
+            ], 403);
+        }
+
+        // Check if user is admin OR the owner of the record
+        if ($user->role !== 'admin' && $user->id !== $award->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action. You can only archive your own records.'
+            ], 403);
+        }
+
+        try {
+            $award->is_archived = true;
+            $award->save();
+
+            return response()->json([
+                'success' => true,
+                'data' => $award,
+                'message' => 'Award archived successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to archive international partner',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

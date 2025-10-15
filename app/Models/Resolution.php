@@ -3,9 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class Resolution extends Model
 {
+    use Auditable;
+
+    /**
+     * Attributes excluded from audit logging.
+     */
+    protected $auditExclude = ['updated_at', 'created_at'];
+
     protected $fillable = [
         'resolution_number',
         'effectivity',

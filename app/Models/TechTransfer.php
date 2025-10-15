@@ -4,15 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class TechTransfer extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable;
+
+    /**
+     * Attributes excluded from audit logging.
+     */
+    protected $auditExclude = ['updated_at', 'created_at'];
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
+        'user_id',
+        'college_id',
         'name',
         'description',
         'category',

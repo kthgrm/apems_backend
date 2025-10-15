@@ -20,6 +20,13 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // check if the user is active
+        if (!Auth::user()->is_active) {
+            return response()->json([
+                'message' => 'Your account is inactive. Please contact the administrator.'
+            ], 403);
+        }
+
         $user = $request->user();
         $token = $user->createToken('auth_token')->plainTextToken;
 

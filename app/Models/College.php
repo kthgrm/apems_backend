@@ -4,10 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class College extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable;
+
+    /**
+     * Attributes excluded from audit logging.
+     */
+    protected $auditExclude = ['updated_at', 'created_at'];
 
     /**
      * The attributes that are mass assignable.
@@ -57,5 +63,29 @@ class College extends Model
     public function intlPartners()
     {
         return $this->hasMany(IntlPartner::class);
+    }
+
+    /**
+     * Get the impact assessments for this college.
+     * College → TechTransfer → ImpactAssessment
+     */
+    public function impactAssessments()
+    {
+        return ImpactAssessment::query()
+            ->whereHas('techTransfer', function ($query) {
+                $query->where('college_id', $this->id);
+            });
+    }
+
+    /**
+     * Get the modalities for this college.
+     * College → TechTransfer → Modality
+     */
+    public function modalities()
+    {
+        return Modality::query()
+            ->whereHas('techTransfer', function ($query) {
+                $query->where('college_id', $this->id);
+            });
     }
 }

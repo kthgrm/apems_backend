@@ -3,10 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class Award extends Model
 {
+    use Auditable;
+
+    /**
+     * Attributes excluded from audit logging.
+     */
+    protected $auditExclude = ['updated_at', 'created_at'];
+
     protected $fillable = [
+        'user_id',
+        'college_id',
         'award_name',
         'description',
         'date_received',
@@ -26,4 +36,14 @@ class Award extends Model
         'updated_at' => 'datetime',
         'attachment_paths' => 'array',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function college()
+    {
+        return $this->belongsTo(College::class);
+    }
 }

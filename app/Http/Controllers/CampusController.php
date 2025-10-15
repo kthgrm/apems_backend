@@ -32,6 +32,20 @@ class CampusController extends Controller
                 ])
                 ->get();
 
+            // Manually add impact assessments count for each campus
+            $campuses->each(function ($campus) {
+                $campus->impact_assessments_count = $campus->impactAssessments()
+                    ->where('is_archived', false)
+                    ->count();
+            });
+
+            // Manually add modalities count for each campus
+            $campuses->each(function ($campus) {
+                $campus->modalities_count = $campus->modalities()
+                    ->where('is_archived', false)
+                    ->count();
+            });
+
             return response()->json([
                 'success' => true,
                 'data' => $campuses,
@@ -220,6 +234,20 @@ class CampusController extends Controller
                     },
                 ])
                 ->get();
+
+            // Manually add impact assessments count for each college
+            $colleges->each(function ($college) {
+                $college->impact_assessments_count = $college->impactAssessments()
+                    ->where('is_archived', false)
+                    ->count();
+            });
+
+            // Manually add modalities count for each college
+            $colleges->each(function ($college) {
+                $college->modalities_count = $college->modalities()
+                    ->where('is_archived', false)
+                    ->count();
+            });
 
             return response()->json([
                 'success' => true,

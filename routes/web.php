@@ -27,7 +27,7 @@ use App\Http\Controllers\AuditLogController;
 // Main application route - redirect to frontend or show API info
 Route::get('/', function () {
     return response()->json([
-        'message' => 'Welcome to APEMS (Academic Program Evaluation Management System)',
+        'message' => 'Welcome to APEMS (Awards, Projects, and Engagements Management System)',
         'version' => '1.0.0',
         'api_base' => url('/api'),
         'documentation' => url('/docs'),
@@ -82,7 +82,7 @@ Route::prefix('docs')->name('docs.')->group(function () {
     Route::get('/', function () {
         return response()->json([
             'title' => 'APEMS API Documentation',
-            'description' => 'Academic Program Evaluation Management System API',
+            'description' => 'Awards, Projects, and Engagements Management System API',
             'version' => '1.0.0',
             'base_url' => url('/api'),
             'authentication' => [
@@ -91,7 +91,7 @@ Route::prefix('docs')->name('docs.')->group(function () {
                 'login_endpoint' => '/api/auth/login'
             ],
             'content_type' => 'application/json',
-            'endpoints' => 'https://localhost:8000/docs/endpoints'
+            'endpoints' => url('/docs/endpoints'),
         ]);
     })->name('index');
 
@@ -102,40 +102,34 @@ Route::prefix('docs')->name('docs.')->group(function () {
                 'POST /api/auth/logout' => 'User logout (requires auth)',
                 'GET /api/user' => 'Get authenticated user info'
             ],
-            'campuses' => [
-                'GET /api/campuses' => 'List all campuses',
-                'POST /api/campuses' => 'Create new campus',
-                'GET /api/campuses/{id}' => 'Get specific campus',
-                'PUT /api/campuses/{id}' => 'Update campus',
-                'DELETE /api/campuses/{id}' => 'Delete campus'
-            ],
-            'colleges' => [
-                'GET /api/colleges' => 'List all colleges',
-                'POST /api/colleges' => 'Create new college',
-                'GET /api/colleges/{id}' => 'Get specific college',
-                'PUT /api/colleges/{id}' => 'Update college',
-                'DELETE /api/colleges/{id}' => 'Delete college'
-            ],
-            'tech_transfers' => [
-                'GET /api/tech-transfers' => 'List all tech transfers',
-                'POST /api/tech-transfers' => 'Create new tech transfer',
-                'GET /api/tech-transfers/{id}' => 'Get specific tech transfer',
-                'PUT /api/tech-transfers/{id}' => 'Update tech transfer',
-                'DELETE /api/tech-transfers/{id}' => 'Delete tech transfer',
-                'GET /api/tech-transfers/statistics' => 'Get tech transfer statistics',
-                'GET /api/tech-transfers/commercialization-metrics' => 'Get commercialization metrics'
-            ],
-            'campus_colleges' => [
-                'GET /api/campus-colleges' => 'List campus-college relationships',
-                'POST /api/campus-colleges' => 'Create new relationship',
-                'GET /api/campus-colleges/{id}' => 'Get specific relationship',
-                'PUT /api/campus-colleges/{id}' => 'Update relationship',
-                'DELETE /api/campus-colleges/{id}' => 'Delete relationship'
-            ],
-            'audit_logs' => [
-                'GET /api/audit-logs' => 'List audit logs',
-                'GET /api/audit-logs/{id}' => 'Get specific audit log',
-                'GET /api/audit-logs/statistics' => 'Get audit statistics'
+            'authenticated routes' => [
+                'campuses' => [
+                    'GET /api/campuses' => 'List all campuses',
+                    'POST /api/campuses' => 'Create new campus',
+                    'GET /api/campuses/{id}' => 'Get specific campus',
+                    'PUT /api/campuses/{id}' => 'Update campus',
+                    'DELETE /api/campuses/{id}' => 'Delete campus'
+                ],
+                'colleges' => [
+                    'GET /api/colleges' => 'List all colleges',
+                    'POST /api/colleges' => 'Create new college',
+                    'GET /api/colleges/{id}' => 'Get specific college',
+                    'PUT /api/colleges/{id}' => 'Update college',
+                    'DELETE /api/colleges/{id}' => 'Delete college'
+                ],
+                'tech_transfers' => [
+                    'GET /api/tech-transfers' => 'List all tech transfers',
+                    'POST /api/tech-transfers' => 'Create new tech transfer',
+                    'GET /api/tech-transfers/{id}' => 'Get specific tech transfer',
+                    'PUT /api/tech-transfers/{id}' => 'Update tech transfer',
+                    'PATCH /api/tech-transfers/{id}/archive' => 'Archive tech transfer',
+                    'GET /api/tech-transfers/statistics' => 'Get tech transfer statistics',
+                ],
+                'audit_logs' => [
+                    'GET /api/audit-logs' => 'List audit logs',
+                    'GET /api/audit-logs/{id}' => 'Get specific audit log',
+                    'GET /api/audit-logs/statistics' => 'Get audit statistics'
+                ]
             ]
         ]);
     })->name('endpoints');
@@ -149,8 +143,6 @@ Route::fallback(function () {
         'suggestions' => [
             'api_documentation' => url('/docs'),
             'api_base' => url('/api'),
-            'health_check' => url('/health'),
-            'system_status' => url('/status')
         ]
     ], 404);
 });

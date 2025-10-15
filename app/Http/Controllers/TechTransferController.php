@@ -130,11 +130,11 @@ class TechTransferController extends Controller
                 'reporting_frequency' => 'required|integer|min:1',
                 'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
-                'user_id' => 'required|exists:users,id',
-                'college_id' => 'required|exists:colleges,id',
                 'is_archived' => 'nullable|boolean',
             ]);
-
+            $user = $request->user();
+            $validatedData['user_id'] = $user->id;
+            $validatedData['college_id'] = $user->college_id;
             $techTransfer = TechTransfer::create($validatedData);
             $techTransfer->load(['user', 'college']);
 
@@ -162,8 +162,24 @@ class TechTransferController extends Controller
      * Display the specified tech transfer.
      * GET /api/tech-transfers/{techTransfer}
      */
-    public function show(TechTransfer $techTransfer): JsonResponse
+    public function show(TechTransfer $techTransfer, Request $request): JsonResponse
     {
+        $user = $request->user();
+        if ($user->role !== 'admin' && $user->id !== $techTransfer->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        //check if archived
+        if ($techTransfer->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tech transfer is archived',
+            ], 404);
+        }
+
         try {
             $techTransfer->load(['user', 'college', 'college.campus']);
 
@@ -187,6 +203,22 @@ class TechTransferController extends Controller
      */
     public function update(Request $request, TechTransfer $techTransfer): JsonResponse
     {
+        $user = $request->user();
+        if ($user->role !== 'admin' && $user->id !== $techTransfer->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        //check if archived
+        if ($techTransfer->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Not Found',
+            ], 404);
+        }
+
         try {
             $validatedData = $request->validate([
                 'name' => 'sometimes|required|string|max:255',
@@ -320,6 +352,40 @@ class TechTransferController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to archive tech transfer',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getUserTechTransfers(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            $query = TechTransfer::with(['college', 'college.campus'])
+                ->where('user_id', $user->id)
+                ->where('is_archived', false);
+
+            // You can still apply other filters like search, category, etc.
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            $techTransfers = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $techTransfers,
+                'message' => 'User tech transfers retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve user tech transfers',
                 'error' => $e->getMessage()
             ], 500);
         }

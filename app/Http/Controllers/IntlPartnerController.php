@@ -37,17 +37,6 @@ class IntlPartnerController extends Controller
                 $query->where('college_id', $request->college_id);
             }
 
-            // Search by name, description, leader, or agency partner
-            if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%")
-                        ->orWhere('leader', 'like', "%{$search}%")
-                        ->orWhere('agency_partner', 'like', "%{$search}%");
-                });
-            }
-
             $partners = $query->orderBy('created_at', 'desc')->get();
 
             return response()->json([
@@ -69,7 +58,55 @@ class IntlPartnerController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $validatedData = $request->validate([
+                'agency_partner' => 'required|string|max:255',
+                'location' => 'required|string|max:255',
+                'activity_conducted' => 'required|string|max:255',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'number_of_participants' => 'required|integer|min:0',
+                'number_of_committee' => 'required|integer|min:0',
+                'narrative' => 'required|string|max:5000',
+                'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
+                'attachment_link' => 'nullable|url|max:255',
+            ]);
+
+            $user = $request->user();
+            $validatedData['user_id'] = $user->id;
+            $validatedData['college_id'] = $user->college_id;
+
+            // Handle multiple file uploads
+            if ($request->hasFile('attachments')) {
+                $attachmentPaths = [];
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('partner-attachments', 'spaces');
+                    $attachmentPaths[] = $path;
+                }
+                $validatedData['attachment_paths'] = $attachmentPaths;
+            }
+
+            $partner = IntlPartner::create($validatedData);
+            $partner->load(['user', 'college', 'college.campus']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $partner,
+                'message' => 'International partner created successfully'
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create international partner',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -127,7 +164,7 @@ class IntlPartnerController extends Controller
                 // Upload new attachments
                 $attachmentPaths = [];
                 foreach ($request->file('attachments') as $file) {
-                    $path = $file->store('project-attachments', 'spaces');
+                    $path = $file->store('partner-attachments', 'spaces');
                     $attachmentPaths[] = $path;
                 }
                 $internationalPartner->attachment_paths = $attachmentPaths;
@@ -148,14 +185,6 @@ class IntlPartnerController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(IntlPartner $intlPartner)
-    {
-        //
     }
 
     /**
