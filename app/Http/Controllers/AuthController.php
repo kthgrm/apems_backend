@@ -30,6 +30,18 @@ class AuthController extends Controller
         $user = $request->user();
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Audit log for login
+        \App\Models\AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'login',
+            'model_type' => get_class($user),
+            'model_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'old_values' => null,
+            'new_values' => null,
+        ]);
+
         return response()->json([
             'message' => 'Login successful',
             'token' => $token,
@@ -46,11 +58,24 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $token = $request->user()->currentAccessToken();
+        $user = $request->user();
+        $token = $user->currentAccessToken();
 
         if ($token && method_exists($token, 'delete')) {
             $token->delete();
         }
+
+        // Audit log for logout
+        \App\Models\AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'logout',
+            'model_type' => get_class($user),
+            'model_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'old_values' => null,
+            'new_values' => null,
+        ]);
 
         return response()->json([
             'message' => 'Logged out'
