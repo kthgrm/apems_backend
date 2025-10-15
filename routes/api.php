@@ -135,5 +135,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/users', [ReportController::class, 'users'])->name('users');
         Route::get('/users/pdf', [ReportController::class, 'usersPdf'])->name('users.pdf');
+
+        Route::get('/audit-trail', [ReportController::class, 'auditTrail'])->name('audit-trail');
+        Route::get('/audit-trail/pdf', [ReportController::class, 'auditTrailPdf'])->name('audit-trail.pdf');
     });
 });

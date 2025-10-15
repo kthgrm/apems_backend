@@ -368,7 +368,7 @@
                                 <div class="user-email">{{ $user->email }}</div>
                             </td>
                             <td>
-                                @if ($user->is_admin)
+                                @if ($user->role === 'admin')
                                     <div class="type-badge type-admin">Admin</div>
                                 @else
                                     <div class="type-badge type-regular">Regular</div>

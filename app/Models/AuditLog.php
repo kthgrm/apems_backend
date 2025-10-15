@@ -34,6 +34,38 @@ class AuditLog extends Model
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     */
+    protected $appends = ['auditable_type', 'auditable_id', 'description'];
+
+    /**
+     * Get the auditable_type attribute (alias for model_type).
+     */
+    public function getAuditableTypeAttribute()
+    {
+        return $this->model_type;
+    }
+
+    /**
+     * Get the auditable_id attribute (alias for model_id).
+     */
+    public function getAuditableIdAttribute()
+    {
+        return $this->model_id;
+    }
+
+    /**
+     * Get the description attribute.
+     */
+    public function getDescriptionAttribute()
+    {
+        $modelName = $this->model_type ? class_basename($this->model_type) : 'Unknown';
+        $action = ucfirst($this->action);
+
+        return "{$action} {$modelName}";
+    }
+
+    /**
      * Get the user that performed the action.
      */
     public function user()

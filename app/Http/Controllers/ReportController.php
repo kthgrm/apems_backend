@@ -10,6 +10,7 @@ use App\Models\IntlPartner;
 use App\Models\ImpactAssessment;
 use App\Models\Modality;
 use App\Models\Resolution;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -1038,9 +1039,9 @@ class ReportController extends Controller
         // User type filter
         if ($request->filled('user_type')) {
             if ($request->user_type === 'admin') {
-                $query->where('is_admin', true);
+                $query->where('role', 'admin');
             } elseif ($request->user_type === 'regular') {
-                $query->where('is_admin', false);
+                $query->where('role', 'user');
             }
         }
 
@@ -1077,8 +1078,8 @@ class ReportController extends Controller
         // Calculate statistics
         $statistics = [
             'total' => \App\Models\User::count(),
-            'admin' => \App\Models\User::where('is_admin', true)->count(),
-            'regular' => \App\Models\User::where('is_admin', false)->count(),
+            'admin' => \App\Models\User::where('role', 'admin')->count(),
+            'regular' => \App\Models\User::where('role', 'user')->count(),
             'active' => \App\Models\User::where('is_active', true)->count(),
             'inactive' => \App\Models\User::where('is_active', false)->count(),
         ];
@@ -1114,9 +1115,9 @@ class ReportController extends Controller
 
         if ($request->filled('user_type')) {
             if ($request->user_type === 'admin') {
-                $query->where('is_admin', true);
+                $query->where('role', 'admin');
             } elseif ($request->user_type === 'regular') {
-                $query->where('is_admin', false);
+                $query->where('role', 'user');
             }
         }
 
@@ -1145,13 +1146,13 @@ class ReportController extends Controller
 
         $statistics = [
             'total' => $users->count(),
-            'admin' => $users->filter(fn($u) => $u->is_admin)->count(),
-            'regular' => $users->filter(fn($u) => !$u->is_admin)->count(),
+            'admin' => $users->filter(fn($u) => $u->role === 'admin')->count(),
+            'regular' => $users->filter(fn($u) => $u->role === 'user')->count(),
             'active' => $users->filter(fn($u) => $u->is_active)->count(),
             'inactive' => $users->filter(fn($u) => !$u->is_active)->count(),
         ];
 
-        $pdf = PDF::loadView('reports.users', [
+        $pdf = PDF::loadView('reports.users-pdf', [
             'users' => $users,
             'filters' => $request->all(),
             'generated_at' => now('Asia/Manila')->format('F d, Y h:i A'),
@@ -1159,8 +1160,177 @@ class ReportController extends Controller
             'statistics' => $statistics,
         ]);
 
-        $pdf->setPaper('a4', 'landscape');
+        $pdf->setPaper('a4', 'portrait');
 
         return $pdf->download('users-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Get audit trail report data
+     */
+    public function auditTrail(Request $request): JsonResponse
+    {
+        try {
+            $query = AuditLog::with('user');
+
+            // Filter by search in description
+            if ($request->filled('search')) {
+                $query->where('description', 'like', '%' . $request->search . '%');
+            }
+
+            // Filter by user if provided
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            // Filter by auditable_type if provided
+            if ($request->filled('auditable_type') && $request->auditable_type !== 'all') {
+                $query->where('model_type', $request->auditable_type);
+            }
+
+            // Filter by action if provided
+            if ($request->filled('action') && $request->action !== 'all') {
+                $query->where('action', $request->action);
+            }
+
+            // Filter by date range
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $auditLogs = $query->paginate($perPage)->withQueryString();
+
+            // Calculate statistics
+            $statistics = [
+                'total' => AuditLog::count(),
+                'created' => AuditLog::where('action', 'create')->count(),
+                'updated' => AuditLog::where('action', 'update')->count(),
+                'deleted' => AuditLog::where('action', 'delete')->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'auditLogs' => $auditLogs,
+                    'filters' => [
+                        'search' => $request->search,
+                        'user_id' => $request->user_id,
+                        'auditable_type' => $request->auditable_type,
+                        'action' => $request->action,
+                        'date_from' => $request->date_from,
+                        'date_to' => $request->date_to,
+                        'sort_by' => $sortBy,
+                        'sort_order' => $sortOrder,
+                    ],
+                    'statistics' => $statistics,
+                ],
+                'message' => 'Audit logs retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in auditTrail method: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve audit logs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate PDF for audit trail report
+     */
+    public function auditTrailPdf(Request $request)
+    {
+        try {
+            $query = AuditLog::with('user');
+
+            // Apply filters
+            if ($request->filled('search')) {
+                $query->where('description', 'like', '%' . $request->search . '%');
+            }
+
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            if ($request->filled('auditable_type') && $request->auditable_type !== 'all') {
+                $query->where('model_type', $request->auditable_type);
+            }
+
+            if ($request->filled('action') && $request->action !== 'all') {
+                $query->where('action', $request->action);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            $auditLogs = $query->get();
+
+            // Calculate statistics for summary box
+            $actionCounts = $auditLogs->groupBy('action')->map->count()->toArray();
+            $statistics = [
+                'total' => $auditLogs->count(),
+                'action_counts' => $actionCounts,
+            ];
+
+            $filters = [
+                'search' => $request->search,
+                'user_id' => $request->user_id,
+                'auditable_type' => $request->auditable_type,
+                'action' => $request->action,
+                'date_from' => $request->date_from,
+                'date_to' => $request->date_to,
+                'sort_by' => $request->sort_by,
+                'sort_order' => $request->sort_order ?? 'desc',
+            ];
+
+            // Get user name for generated_by
+            $user = $request->user();
+            $generatedBy = $user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) : 'System';
+            if (empty($generatedBy)) {
+                $generatedBy = $user->email ?? 'System';
+            }
+
+            $pdf = Pdf::loadView('reports.audit-trail-pdf', [
+                'auditLogs' => $auditLogs,
+                'filters' => $filters,
+                'statistics' => $statistics,
+                'generated_at' => now('Asia/Manila')->format('F d, Y h:i A'),
+                'generated_by' => $generatedBy,
+            ]);
+
+            $pdf->setPaper('a4', 'portrait');
+
+            return $pdf->download('audit-trail-report-' . now()->format('Y-m-d') . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('Error generating audit trail PDF: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate PDF',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

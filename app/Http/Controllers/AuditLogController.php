@@ -18,28 +18,33 @@ class AuditLogController extends Controller
         try {
             $query = AuditLog::with('user');
 
+            // Filter by search in description
+            if ($request->filled('search')) {
+                $query->where('description', 'like', '%' . $request->search . '%');
+            }
+
             // Filter by user if provided
-            if ($request->has('user_id')) {
+            if ($request->filled('user_id')) {
                 $query->where('user_id', $request->user_id);
             }
 
-            // Filter by model type if provided
-            if ($request->has('model_type')) {
-                $query->where('model_type', $request->model_type);
+            // Filter by auditable_type if provided
+            if ($request->filled('auditable_type') && $request->auditable_type !== 'all') {
+                $query->where('model_type', $request->auditable_type);
             }
 
             // Filter by action if provided
-            if ($request->has('action')) {
+            if ($request->filled('action') && $request->action !== 'all') {
                 $query->where('action', $request->action);
             }
 
             // Filter by date range
-            if ($request->has('from_date')) {
-                $query->where('created_at', '>=', $request->from_date);
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->date_from);
             }
 
-            if ($request->has('to_date')) {
-                $query->where('created_at', '<=', $request->to_date);
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
             }
 
             // Pagination
@@ -234,24 +239,28 @@ class AuditLogController extends Controller
             $query = AuditLog::with('user');
 
             // Apply filters
-            if ($request->has('user_id')) {
+            if ($request->filled('search')) {
+                $query->where('description', 'like', '%' . $request->search . '%');
+            }
+
+            if ($request->filled('user_id')) {
                 $query->where('user_id', $request->user_id);
             }
 
-            if ($request->has('model_type')) {
-                $query->where('model_type', $request->model_type);
+            if ($request->filled('auditable_type') && $request->auditable_type !== 'all') {
+                $query->where('model_type', $request->auditable_type);
             }
 
-            if ($request->has('action')) {
+            if ($request->filled('action') && $request->action !== 'all') {
                 $query->where('action', $request->action);
             }
 
-            if ($request->has('from_date')) {
-                $query->where('created_at', '>=', $request->from_date);
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->date_from);
             }
 
-            if ($request->has('to_date')) {
-                $query->where('created_at', '<=', $request->to_date . ' 23:59:59');
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
             }
 
             $auditLogs = $query->orderBy('created_at', 'desc')->get();
@@ -259,17 +268,18 @@ class AuditLogController extends Controller
             // Calculate statistics
             $statistics = [
                 'total' => $auditLogs->count(),
-                'created' => $auditLogs->where('action', 'created')->count(),
-                'updated' => $auditLogs->where('action', 'updated')->count(),
-                'deleted' => $auditLogs->where('action', 'deleted')->count(),
+                'created' => $auditLogs->where('action', 'create')->count(),
+                'updated' => $auditLogs->where('action', 'update')->count(),
+                'deleted' => $auditLogs->where('action', 'delete')->count(),
             ];
 
             $filters = [
+                'search' => $request->search,
                 'user_id' => $request->user_id,
-                'model_type' => $request->model_type,
+                'auditable_type' => $request->auditable_type,
                 'action' => $request->action,
-                'from_date' => $request->from_date,
-                'to_date' => $request->to_date,
+                'date_from' => $request->date_from,
+                'date_to' => $request->date_to,
             ];
 
             $pdf = Pdf::loadView('reports.audit-trail-pdf', [
