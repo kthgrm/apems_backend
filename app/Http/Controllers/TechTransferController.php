@@ -52,20 +52,32 @@ class TechTransferController extends Controller
                 'end_date' => 'required|date|after:start_date',
                 'tags' => 'required|string|max:255',
                 'leader' => 'required|string|max:255',
+                'members' => 'required|string|max:255',
                 'deliverables' => 'nullable|string|max:255',
                 'agency_partner' => 'required|string|max:255',
                 'contact_person' => 'required|string|max:255',
                 'contact_phone' => 'nullable|string|max:255',
-                'contact_address' => 'required|string|max:255',
                 'copyright' => 'required|string|in:yes,no,pending',
                 'ip_details' => 'nullable|string',
-                'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
+                'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
                 'is_archived' => 'nullable|boolean',
             ]);
+
             $user = $request->user();
             $validatedData['user_id'] = $user->id;
             $validatedData['college_id'] = $user->college_id;
+
+            // Handle multiple file uploads
+            if ($request->hasFile('attachments')) {
+                $attachmentPaths = [];
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('project-attachments', 'spaces');
+                    $attachmentPaths[] = $path;
+                }
+                $validatedData['attachment_paths'] = $attachmentPaths;
+            }
+
             $techTransfer = TechTransfer::create($validatedData);
             $techTransfer->load(['user', 'college']);
 
@@ -160,14 +172,14 @@ class TechTransferController extends Controller
                 'end_date' => 'sometimes|required|date|after:start_date',
                 'tags' => 'sometimes|required|string|max:255',
                 'leader' => 'sometimes|required|string|max:255',
+                'members' => 'sometimes|required|string|max:255',
                 'deliverables' => 'nullable|string|max:255',
                 'agency_partner' => 'sometimes|required|string|max:255',
                 'contact_person' => 'sometimes|required|string|max:255',
                 'contact_phone' => 'nullable|string|max:255',
-                'contact_address' => 'sometimes|required|string|max:255',
                 'copyright' => 'sometimes|required|string|in:yes,no,pending',
                 'ip_details' => 'nullable|string',
-                'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
+                'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
             ]);
 

@@ -17,17 +17,15 @@ class ImpactAssessment extends Model
     protected $fillable = [
         'user_id',
         'tech_transfer_id',
-        'beneficiary',
-        'geographic_coverage',
-        'num_direct_beneficiary',
-        'num_indirect_beneficiary',
+        'title',
+        'description',
+        'attachment_paths',
         'is_archived',
     ];
 
     protected $casts = [
-        'num_direct_beneficiary' => 'integer',
-        'num_indirect_beneficiary' => 'integer',
         'is_archived' => 'boolean',
+        'attachment_paths' => 'array',
     ];
 
     public function user()

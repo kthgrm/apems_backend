@@ -18,10 +18,9 @@ return new class extends Migration
             $table->foreignIdFor(User::class)->constrained()->restrictOnDelete();
             $table->foreignIdFor(TechTransfer::class)->constrained()->restrictOnDelete();
 
-            $table->string('beneficiary');
-            $table->integer('num_direct_beneficiary');
-            $table->integer('num_indirect_beneficiary');
-            $table->string('geographic_coverage');
+            $table->string('title');
+            $table->text('description');
+            $table->json('attachment_paths')->nullable();
 
             $table->boolean('is_archived')->default(false);
 

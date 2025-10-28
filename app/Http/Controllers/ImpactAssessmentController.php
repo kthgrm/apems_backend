@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ImpactAssessment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ImpactAssessmentController extends Controller
@@ -58,13 +59,23 @@ class ImpactAssessmentController extends Controller
         try {
             $validatedData = $request->validate([
                 'tech_transfer_id' => 'required|exists:tech_transfers,id',
-                'user_id' => 'required|exists:users,id',
-                'beneficiary' => 'required|string|max:255',
-                'num_direct_beneficiary' => 'required|integer|min:0',
-                'num_indirect_beneficiary' => 'required|integer|min:0',
+                'title' => 'required|string|max:255',
+                'description' => 'required|string|max:1000',
+                'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
             ]);
             $user = $request->user();
             $validatedData['user_id'] = $user->id;
+
+            // Handle multiple file uploads
+            if ($request->hasFile('attachments')) {
+                $attachmentPaths = [];
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('impact-attachments', 'spaces');
+                    $attachmentPaths[] = $path;
+                }
+                $validatedData['attachment_paths'] = $attachmentPaths;
+            }
+
             $assessment = ImpactAssessment::create($validatedData);
             $assessment->load(['user', 'techTransfer.college']);
 
@@ -150,11 +161,30 @@ class ImpactAssessmentController extends Controller
         try {
             $validatedData = $request->validate([
                 'tech_transfer_id' => 'required|exists:tech_transfers,id',
-                'beneficiary' => 'required|string|max:255',
-                'num_direct_beneficiary' => 'required|integer|min:0',
-                'num_indirect_beneficiary' => 'required|integer|min:0',
-                'geographic_coverage' => 'required|string',
+                'title' => 'required|string|max:255',
+                'description' => 'required|string|max:1000',
+                'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
             ]);
+
+            // Handle multiple file uploads for update
+            if ($request->hasFile('attachments')) {
+                // Delete old attachments if they exist
+                if ($impactAssessment->attachment_paths) {
+                    foreach ($impactAssessment->attachment_paths as $oldPath) {
+                        if (Storage::disk('spaces')->exists($oldPath)) {
+                            Storage::disk('spaces')->delete($oldPath);
+                        }
+                    }
+                }
+
+                // Upload new attachments
+                $attachmentPaths = [];
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('impact-attachments', 'spaces');
+                    $attachmentPaths[] = $path;
+                }
+                $impactAssessment->attachment_paths = $attachmentPaths;
+            }
 
             $impactAssessment->update($validatedData);
             $impactAssessment->load(['user', 'techTransfer.college', 'techTransfer.college.campus']);

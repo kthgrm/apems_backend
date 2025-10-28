@@ -31,7 +31,6 @@ return new class extends Migration
             $table->string('agency_partner');
             $table->string('contact_person');
             $table->string('contact_phone');
-            $table->string('contact_address');
 
             $table->enum('copyright', ['yes', 'no', 'pending'])->default('no');
             $table->text('ip_details')->nullable();
