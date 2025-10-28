@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\IntlPartner;
+use App\Models\Engagement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
-class IntlPartnerController extends Controller
+class EngagementController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,7 +16,7 @@ class IntlPartnerController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = IntlPartner::with(['user', 'college', 'college.campus'])->where('is_archived', false);
+            $query = Engagement::with(['user', 'college', 'college.campus'])->where('is_archived', false);
 
             // Filter by user if provided
             if ($request->has('user_id')) {
@@ -66,7 +66,7 @@ class IntlPartnerController extends Controller
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
                 'number_of_participants' => 'required|integer|min:0',
-                'number_of_committee' => 'required|integer|min:0',
+                'faculty_involved' => 'required|string|max:255',
                 'narrative' => 'required|string|max:5000',
                 'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
@@ -86,13 +86,13 @@ class IntlPartnerController extends Controller
                 $validatedData['attachment_paths'] = $attachmentPaths;
             }
 
-            $partner = IntlPartner::create($validatedData);
+            $partner = Engagement::create($validatedData);
             $partner->load(['user', 'college', 'college.campus']);
 
             return response()->json([
                 'success' => true,
                 'data' => $partner,
-                'message' => 'International partner created successfully'
+                'message' => 'Engagement created successfully'
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -103,29 +103,29 @@ class IntlPartnerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create international partner',
+                'message' => 'Failed to create engagement',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * GET /api/international-partners/{internationalPartner}
+     * Display the specified resource.
      */
-    public function show(IntlPartner $internationalPartner): JsonResponse
+    public function show(Engagement $engagement): JsonResponse
     {
         try {
-            $internationalPartner->load(['user', 'college', 'college.campus']);
+            $engagement->load(['user', 'college', 'college.campus']);
 
             return response()->json([
                 'success' => true,
-                'data' => $internationalPartner,
-                'message' => 'International partner retrieved successfully'
+                'data' => $engagement,
+                'message' => 'Engagement retrieved successfully'
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve international partner',
+                'message' => 'Failed to retrieve engagement',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -134,7 +134,7 @@ class IntlPartnerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, IntlPartner $internationalPartner): JsonResponse
+    public function update(Request $request, Engagement $engagement): JsonResponse
     {
         $validatedData = $request->validate([
             'agency_partner' => 'required|string|max:255',
@@ -143,7 +143,7 @@ class IntlPartnerController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'number_of_participants' => 'required|integer|min:0',
-            'number_of_committee' => 'required|integer|min:0',
+            'faculty_involved' => 'required|string|max:255',
             'narrative' => 'required|string|max:5000',
             'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
             'attachment_link' => 'nullable|url|max:255',
@@ -153,8 +153,8 @@ class IntlPartnerController extends Controller
             // Handle multiple file uploads for update
             if ($request->hasFile('attachments')) {
                 // Delete old attachments if they exist
-                if ($internationalPartner->attachment_paths) {
-                    foreach ($internationalPartner->attachment_paths as $oldPath) {
+                if ($engagement->attachment_paths) {
+                    foreach ($engagement->attachment_paths as $oldPath) {
                         if (Storage::disk('spaces')->exists($oldPath)) {
                             Storage::disk('spaces')->delete($oldPath);
                         }
@@ -167,21 +167,21 @@ class IntlPartnerController extends Controller
                     $path = $file->store('partner-attachments', 'spaces');
                     $attachmentPaths[] = $path;
                 }
-                $internationalPartner->attachment_paths = $attachmentPaths;
+                $engagement->attachment_paths = $attachmentPaths;
             }
 
-            $internationalPartner->update($validatedData);
-            $internationalPartner->load(['user', 'college', 'college.campus']);
+            $engagement->update($validatedData);
+            $engagement->load(['user', 'college', 'college.campus']);
 
             return response()->json([
                 'success' => true,
-                'data' => $internationalPartner,
-                'message' => 'International partner updated successfully'
+                'data' => $engagement,
+                'message' => 'Engagement updated successfully'
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update international partner',
+                'message' => 'Failed to update engagement',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -190,7 +190,7 @@ class IntlPartnerController extends Controller
     /**
      * Archive the specified resource.
      */
-    public function archive(Request $request, IntlPartner $internationalPartner): JsonResponse
+    public function archive(Request $request, Engagement $engagement): JsonResponse
     {
         // Validate password presence
         if (! $request->filled('password')) {
@@ -211,7 +211,7 @@ class IntlPartnerController extends Controller
         }
 
         // Check if user is admin OR the owner of the record
-        if ($user->role !== 'admin' && $user->id !== $internationalPartner->user_id) {
+        if ($user->role !== 'admin' && $user->id !== $engagement->user_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized action. You can only archive your own records.'
@@ -219,18 +219,18 @@ class IntlPartnerController extends Controller
         }
 
         try {
-            $internationalPartner->is_archived = true;
-            $internationalPartner->save();
+            $engagement->is_archived = true;
+            $engagement->save();
 
             return response()->json([
                 'success' => true,
-                'data' => $internationalPartner,
-                'message' => 'International partner archived successfully'
+                'data' => $engagement,
+                'message' => 'Engagement archived successfully'
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to archive international partner',
+                'message' => 'Failed to archive engagement',
                 'error' => $e->getMessage()
             ], 500);
         }

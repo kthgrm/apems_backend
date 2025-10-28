@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\TechTransfer;
 use App\Models\Award;
-use App\Models\IntlPartner;
 use App\Models\Campus;
 use App\Models\College;
+use App\Models\Engagement;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -26,7 +25,7 @@ class DashboardController extends Controller
             'total_users' => User::count(),
             'total_projects' => TechTransfer::where('is_archived', false)->count(),
             'total_awards' => Award::where('is_archived', false)->count(),
-            'total_international_partners' => IntlPartner::where('is_archived', false)->count(),
+            'total_engagements' => Engagement::where('is_archived', false)->count(),
             'total_campuses' => Campus::count(),
             'total_colleges' => College::count(),
         ];
@@ -87,7 +86,7 @@ class DashboardController extends Controller
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
-            $partners = IntlPartner::where('is_archived', false)
+            $engagements = Engagement::where('is_archived', false)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
@@ -95,7 +94,7 @@ class DashboardController extends Controller
                 'month' => $monthName,
                 'projects' => $projects,
                 'awards' => $awards,
-                'partners' => $partners,
+                'engagements' => $engagements,
             ];
         }
 
@@ -123,7 +122,7 @@ class DashboardController extends Controller
                 ->whereYear('created_at', $year)
                 ->count();
 
-            $totalPartners = IntlPartner::where('is_archived', false)
+            $totalEngagements = Engagement::where('is_archived', false)
                 ->whereIn('college_id', $collegeIds)
                 ->whereYear('created_at', $year)
                 ->count();
@@ -134,7 +133,7 @@ class DashboardController extends Controller
                 'total_colleges' => $campus->colleges->count(),
                 'total_projects' => $totalProjects,
                 'total_awards' => $totalAwards,
-                'total_partners' => $totalPartners,
+                'total_engagements' => $totalEngagements,
             ];
         }
 
@@ -160,14 +159,14 @@ class DashboardController extends Controller
             ->pluck('year')
             ->toArray();
 
-        // Get years from partners
-        $partnerYears = IntlPartner::selectRaw('DISTINCT YEAR(created_at) as year')
+        // Get years from engagements
+        $engagementYears = Engagement::selectRaw('DISTINCT YEAR(created_at) as year')
             ->whereNotNull('created_at')
             ->pluck('year')
             ->toArray();
 
         // Merge and sort years
-        $years = array_unique(array_merge($techTransferYears, $awardYears, $partnerYears));
+        $years = array_unique(array_merge($techTransferYears, $awardYears, $engagementYears));
         rsort($years);
 
         // If no data exists, return current year

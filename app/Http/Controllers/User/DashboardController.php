@@ -4,7 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Award;
-use App\Models\IntlPartner;
+use App\Models\Engagement;
 use App\Models\TechTransfer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +19,7 @@ class DashboardController extends Controller
         $userStats = [
             'total_projects' => TechTransfer::where('user_id', $user->id)->where('is_archived', false)->count(),
             'total_awards' => Award::where('user_id', $user->id)->where('is_archived', false)->count(),
-            'total_international_partners' => IntlPartner::where('user_id', $user->id)->where('is_archived', false)->count(),
+            'total_engagements' => Engagement::where('user_id', $user->id)->where('is_archived', false)->count(),
         ];
 
         // Get recent submissions from other users (excluding current user)
@@ -61,23 +61,23 @@ class DashboardController extends Controller
                         'date_received' => $award->date_received
                     ];
                 }),
-            'international_partners' => IntlPartner::with(['user', 'college.campus'])
+            'engagements' => Engagement::with(['user', 'college.campus'])
                 ->where('user_id', '!=', $user->id)
                 ->where('is_archived', false)
                 ->latest()
                 ->take(5)
                 ->get()
-                ->map(function ($partner) {
+                ->map(function ($engagement) {
                     return [
-                        'id' => $partner->id,
-                        'name' => $partner->agency_partner,
-                        'type' => 'International Partner',
-                        'user_name' => $partner->user->name ?? 'Unknown User',
-                        'campus' => $partner->college?->campus?->name ?? 'N/A',
-                        'college' => $partner->college?->name ?? 'N/A',
-                        'created_at' => $partner->created_at,
-                        'description' => $partner->activity_conducted ?? '',
-                        'location' => $partner->location ?? ''
+                        'id' => $engagement->id,
+                        'name' => $engagement->agency_partner,
+                        'type' => 'Engagement',
+                        'user_name' => $engagement->user->name ?? 'Unknown User',
+                        'campus' => $engagement->college?->campus?->name ?? 'N/A',
+                        'college' => $engagement->college?->name ?? 'N/A',
+                        'created_at' => $engagement->created_at,
+                        'description' => $engagement->activity_conducted ?? '',
+                        'location' => $engagement->location ?? ''
                     ];
                 })
         ];

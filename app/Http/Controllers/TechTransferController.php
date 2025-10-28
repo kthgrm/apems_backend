@@ -20,70 +20,6 @@ class TechTransferController extends Controller
         try {
             $query = TechTransfer::with(['user', 'college', 'college.campus'])->where('is_archived', false);
 
-            // Filter by user if provided
-            if ($request->has('user_id')) {
-                $query->where('user_id', $request->user_id);
-            }
-
-            if ($request->has('campus')) {
-                // tech_transfers table does not have a campus_id column.
-                // Filter by campus through the related college instead.
-                $campusId = $request->campus;
-                $query->whereHas('college', function ($q) use ($campusId) {
-                    $q->where('campus_id', $campusId);
-                });
-            }
-
-            // Filter by college if provided
-            if ($request->has('college_id')) {
-                $query->where('college_id', $request->college_id);
-            }
-
-            // Filter by category if provided
-            if ($request->has('category')) {
-                $query->where('category', $request->category);
-            }
-
-            // Filter by purpose if provided
-            if ($request->has('purpose')) {
-                $query->where('purpose', $request->purpose);
-            }
-
-            // Filter by copyright status if provided
-            if ($request->has('copyright')) {
-                $query->where('copyright', $request->copyright);
-            }
-
-            // Filter by archived status if provided
-            if ($request->has('is_archived')) {
-                $query->where('is_archived', $request->boolean('is_archived'));
-            }
-
-            // Search by name, description, leader, or agency partner
-            if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%")
-                        ->orWhere('leader', 'like', "%{$search}%")
-                        ->orWhere('agency_partner', 'like', "%{$search}%");
-                });
-            }
-
-            // Filter by date range
-            if ($request->has('start_date_from')) {
-                $query->where('start_date', '>=', $request->start_date_from);
-            }
-
-            if ($request->has('start_date_to')) {
-                $query->where('start_date', '<=', $request->start_date_to);
-            }
-
-            // Filter by assessment based
-            if ($request->has('is_assessment_based')) {
-                $query->where('is_assessment_based', $request->boolean('is_assessment_based'));
-            }
-
             $techTransfers = $query->orderBy('created_at', 'desc')->get();
 
             return response()->json([
@@ -119,15 +55,10 @@ class TechTransferController extends Controller
                 'deliverables' => 'nullable|string|max:255',
                 'agency_partner' => 'required|string|max:255',
                 'contact_person' => 'required|string|max:255',
-                'contact_email' => 'required|email|max:255',
-                'contact_phone' => 'required|string|max:255',
+                'contact_phone' => 'nullable|string|max:255',
                 'contact_address' => 'required|string|max:255',
                 'copyright' => 'required|string|in:yes,no,pending',
                 'ip_details' => 'nullable|string',
-                'is_assessment_based' => 'required|boolean',
-                'monitoring_evaluation_plan' => 'nullable|string',
-                'sustainability_plan' => 'nullable|string',
-                'reporting_frequency' => 'required|integer|min:1',
                 'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
                 'is_archived' => 'nullable|boolean',
@@ -232,18 +163,12 @@ class TechTransferController extends Controller
                 'deliverables' => 'nullable|string|max:255',
                 'agency_partner' => 'sometimes|required|string|max:255',
                 'contact_person' => 'sometimes|required|string|max:255',
-                'contact_email' => 'sometimes|required|email|max:255',
-                'contact_phone' => 'sometimes|required|string|max:255',
+                'contact_phone' => 'nullable|string|max:255',
                 'contact_address' => 'sometimes|required|string|max:255',
                 'copyright' => 'sometimes|required|string|in:yes,no,pending',
                 'ip_details' => 'nullable|string',
-                'is_assessment_based' => 'sometimes|required|boolean',
-                'monitoring_evaluation_plan' => 'nullable|string',
-                'sustainability_plan' => 'nullable|string',
-                'reporting_frequency' => 'sometimes|required|integer|min:1',
                 'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
-                'is_archived' => 'nullable|boolean',
             ]);
 
             // Handle multiple file uploads for update
@@ -284,28 +209,6 @@ class TechTransferController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update tech transfer',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Remove the specified tech transfer.
-     * DELETE /api/tech-transfers/{techTransfer}
-     */
-    public function destroy(TechTransfer $techTransfer): JsonResponse
-    {
-        try {
-            $techTransfer->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tech transfer deleted successfully'
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete tech transfer',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -402,7 +305,6 @@ class TechTransferController extends Controller
                 'total_tech_transfers' => TechTransfer::count(),
                 'active_tech_transfers' => TechTransfer::where('is_archived', false)->count(),
                 'archived_tech_transfers' => TechTransfer::where('is_archived', true)->count(),
-                'assessment_based_transfers' => TechTransfer::where('is_assessment_based', true)->count(),
                 'transfers_by_category' => TechTransfer::selectRaw('category, COUNT(*) as count')
                     ->groupBy('category')
                     ->get(),

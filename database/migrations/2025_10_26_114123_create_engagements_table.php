@@ -13,28 +13,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tech_transfers', function (Blueprint $table) {
+        Schema::create('engagements', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class)->constrained()->restrictOnDelete();
             $table->foreignIdFor(College::class)->constrained()->restrictOnDelete();
 
-            $table->string('name');
-            $table->text('description');
-            $table->string('category');
-            $table->string('purpose');
+            $table->string('agency_partner');
+            $table->string('location');
+            $table->string('activity_conducted');
             $table->date('start_date');
             $table->date('end_date');
-            $table->string('tags');
-            $table->string('leader');
-            $table->string('deliverables')->nullable();
-
-            $table->string('agency_partner');
-            $table->string('contact_person');
-            $table->string('contact_phone');
-            $table->string('contact_address');
-
-            $table->enum('copyright', ['yes', 'no', 'pending'])->default('no');
-            $table->text('ip_details')->nullable();
+            $table->string('number_of_participants');
+            $table->string('faculty_involved');
+            $table->string('narrative');
 
             $table->json('attachment_paths')->nullable();
             $table->string('attachment_link')->nullable();
@@ -50,6 +41,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tech_transfers');
+        Schema::dropIfExists('engagements');
     }
 };

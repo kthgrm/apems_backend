@@ -371,7 +371,7 @@
                                 @if ($user->role === 'admin')
                                     <div class="type-badge type-admin">Admin</div>
                                 @else
-                                    <div class="type-badge type-regular">Regular</div>
+                                    <div class="type-badge type-regular">CESU</div>
                                 @endif
                             </td>
                             <td>

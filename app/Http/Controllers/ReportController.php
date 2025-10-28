@@ -6,11 +6,11 @@ use App\Models\TechTransfer;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\Award;
-use App\Models\IntlPartner;
 use App\Models\ImpactAssessment;
 use App\Models\Modality;
 use App\Models\Resolution;
 use App\Models\AuditLog;
+use App\Models\Engagement;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -390,11 +390,11 @@ class ReportController extends Controller
     }
 
     /**
-     * Get international partners report data
+     * Generate PDF for engagements report
      */
-    public function internationalPartners(Request $request): JsonResponse
+    public function engagements(Request $request): JsonResponse
     {
-        $query = IntlPartner::with(['user', 'college', 'college.campus'])
+        $query = Engagement::with(['user', 'college', 'college.campus'])
             ->where('is_archived', false);
 
         if ($request->filled('campus_id')) {
@@ -431,14 +431,14 @@ class ReportController extends Controller
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $partners = $query->paginate(15)->withQueryString();
+        $engagements = $query->paginate(15)->withQueryString();
 
         $campuses = Campus::orderBy('name')->get(['id', 'name']);
         $colleges = College::with('campus:id,name')->orderBy('name')->get(['id', 'name', 'campus_id']);
 
         $statistics = [
-            'total_partners' => IntlPartner::where('is_archived', false)->count(),
-            'partners_by_month' => IntlPartner::where('is_archived', false)
+            'total_engagements' => Engagement::where('is_archived', false)->count(),
+            'engagements_by_month' => Engagement::where('is_archived', false)
                 ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as period, COUNT(*) as count')
                 ->groupBy('period')
                 ->orderBy('period', 'desc')
@@ -449,7 +449,7 @@ class ReportController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'partners' => $partners,
+                'engagements' => $engagements,
                 'campuses' => $campuses,
                 'colleges' => $colleges,
                 'filters' => [
@@ -463,16 +463,16 @@ class ReportController extends Controller
                 ],
                 'statistics' => $statistics,
             ],
-            'message' => 'International partners report retrieved successfully'
+            'message' => 'Engagement report retrieved successfully'
         ], 200);
     }
 
     /**
-     * Generate PDF for international partners report
+     * Generate PDF for engagements report
      */
-    public function internationalPartnersPdf(Request $request)
+    public function engagementsPdf(Request $request)
     {
-        $query = IntlPartner::with(['user', 'college', 'college.campus'])
+        $query = Engagement::with(['user', 'college', 'college.campus'])
             ->where('is_archived', false);
 
         if ($request->filled('campus_id')) {
@@ -509,7 +509,7 @@ class ReportController extends Controller
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $partners = $query->get();
+        $engagements = $query->get();
 
         $filterInfo = [];
         if ($request->filled('campus_id')) {
@@ -532,11 +532,11 @@ class ReportController extends Controller
         ];
 
         $statistics = [
-            'total_partners' => $partners->count(),
+            'total_engagements' => $engagements->count(),
         ];
 
-        $pdf = Pdf::loadView('reports.international-partners-pdf', [
-            'internationalPartners' => $partners,
+        $pdf = Pdf::loadView('reports.engagements-pdf', [
+            'engagements' => $engagements,
             'filters' => $filters,
             'generated_at' => now('Asia/Manila')->format('F d, Y h:i A'),
             'generated_by' => $request->user()->first_name . ' ' . $request->user()->last_name ?? 'System',
@@ -545,7 +545,7 @@ class ReportController extends Controller
 
         $pdf->setPaper('a4', 'portrait');
 
-        return $pdf->download('international-partners-report-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('engagements-report-' . now()->format('Y-m-d') . '.pdf');
     }
 
     /**
@@ -870,9 +870,7 @@ class ReportController extends Controller
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
-                    $q->where('resolution_number', 'like', "%{$search}%")
-                        ->orWhere('contact_person', 'like', "%{$search}%")
-                        ->orWhere('partner_agency', 'like', "%{$search}%");
+                    $q->where('title', 'like', "%{$search}%");
                 });
             }
 
@@ -888,28 +886,6 @@ class ReportController extends Controller
                 $query->where('created_at', '<=', $lastDay);
             }
 
-            // Status filter
-            if ($request->filled('status')) {
-                $currentDate = now();
-                switch ($request->status) {
-                    case 'active':
-                        $query->where('effectivity', '<=', $currentDate)
-                            ->where('expiration', '>=', $currentDate);
-                        break;
-                    case 'expired':
-                        $query->where('expiration', '<', $currentDate);
-                        break;
-                    case 'pending':
-                        $query->where('effectivity', '>', $currentDate);
-                        break;
-                }
-            }
-
-            // Year filter
-            if ($request->filled('year')) {
-                $query->whereYear('effectivity', $request->year);
-            }
-
             // Sorting
             $sortBy = $request->get('sort_by', 'created_at');
             $sortOrder = $request->get('sort_order', 'desc');
@@ -920,10 +896,6 @@ class ReportController extends Controller
             // Calculate statistics
             $statistics = [
                 'total' => Resolution::count(),
-                'active' => Resolution::where('effectivity', '<=', now())
-                    ->where('expiration', '>=', now())->count(),
-                'expired' => Resolution::where('expiration', '<', now())->count(),
-                'pending' => Resolution::where('effectivity', '>', now())->count(),
             ];
 
             return response()->json([
@@ -949,15 +921,13 @@ class ReportController extends Controller
      */
     public function resolutionsPdf(Request $request)
     {
-        $query = \App\Models\Resolution::with(['user']);
+        $query = Resolution::with(['user']);
 
         // Apply same filters as the main report
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('resolution_number', 'like', "%{$search}%")
-                    ->orWhere('contact_person', 'like', "%{$search}%")
-                    ->orWhere('partner_agency', 'like', "%{$search}%");
+                $q->where('title', 'like', "%{$search}%");
             });
         }
 
@@ -972,26 +942,6 @@ class ReportController extends Controller
             $query->where('created_at', '<=', $lastDay);
         }
 
-        if ($request->filled('status')) {
-            $currentDate = now();
-            switch ($request->status) {
-                case 'active':
-                    $query->where('effectivity', '<=', $currentDate)
-                        ->where('expiration', '>=', $currentDate);
-                    break;
-                case 'expired':
-                    $query->where('expiration', '<', $currentDate);
-                    break;
-                case 'pending':
-                    $query->where('effectivity', '>', $currentDate);
-                    break;
-            }
-        }
-
-        if ($request->filled('year')) {
-            $query->whereYear('effectivity', $request->year);
-        }
-
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
@@ -1000,9 +950,6 @@ class ReportController extends Controller
 
         $statistics = [
             'total' => $resolutions->count(),
-            'active' => $resolutions->filter(fn($r) => $r->effectivity <= now() && $r->expiration >= now())->count(),
-            'expired' => $resolutions->filter(fn($r) => $r->expiration < now())->count(),
-            'pending' => $resolutions->filter(fn($r) => $r->effectivity > now())->count(),
         ];
 
         $pdf = PDF::loadView('reports.resolutions-pdf', [

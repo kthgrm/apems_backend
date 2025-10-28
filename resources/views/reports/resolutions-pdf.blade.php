@@ -219,16 +219,6 @@
     @if (!empty(array_filter($filters)))
         <div class="filters">
             <h3>Applied Filters:</h3>
-            @if (!empty($filters['status']))
-                <div class="filter-item">
-                    <strong>Status:</strong> {{ ucfirst(str_replace('_', ' ', $filters['status'])) }}
-                </div>
-            @endif
-            @if (!empty($filters['year']))
-                <div class="filter-item">
-                    <strong>Effectivity Year:</strong> {{ $filters['year'] }}
-                </div>
-            @endif
             @if (!empty($filters['date_from']))
                 <div class="filter-item">
                     <strong>From Date:</strong> {{ $filters['date_from'] }}
@@ -257,11 +247,8 @@
         <table>
             <thead>
                 <tr>
-                    <th>Resolution Number</th>
-                    <th>Effectivity Year</th>
-                    <th>Expiration Date</th>
-                    <th>Contact Details</th>
-                    <th>Partner Agency</th>
+                    <th>ID</th>
+                    <th>Title</th>
                     <th>Submitted By</th>
                     <th>Created Date</th>
                 </tr>
@@ -270,23 +257,10 @@
                 @forelse($resolutions as $resolution)
                     @php
                         $currentDate = \Carbon\Carbon::now();
-                        $effectivityDate = \Carbon\Carbon::parse($resolution->effectivity);
-                        $expirationDate = \Carbon\Carbon::parse($resolution->expiration);
                     @endphp
                     <tr>
-                        <td style="font-weight: bold;">{{ $resolution->resolution_number }}</td>
-                        <td>{{ $effectivityDate->format('Y') }}</td>
-                        <td>{{ $expirationDate->format('M d, Y') }}</td>
-                        <td style="word-break: break-all;">
-                            <div>
-                                <strong>{{ $resolution->contact_person ?? '-' }}</strong>
-                                @if ($resolution->contact_person && $resolution->contact_number_email)
-                                    <br>
-                                @endif
-                                <span>{{ $resolution->contact_number_email ?? '' }}</span>
-                            </div>
-                        </td>
-                        <td>{{ $resolution->partner_agency ?? '-' }}</td>
+                        <td style="font-weight: bold;">{{ $resolution->id }}</td>
+                        <td>{{ $resolution->title ?? '-' }}</td>
                         <td>
                             <div>
                                 <strong>{{ isset($resolution->user) ? $resolution->user->first_name . ' ' . $resolution->user->last_name : 'N/A' }}</strong><br>

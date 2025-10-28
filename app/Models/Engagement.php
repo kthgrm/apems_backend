@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\Model;
 
-class IntlPartner extends Model
+class Engagement extends Model
 {
     use Auditable;
 
@@ -23,7 +23,7 @@ class IntlPartner extends Model
         'start_date',
         'end_date',
         'number_of_participants',
-        'number_of_committee',
+        'faculty_involved',
         'narrative',
         'attachment_paths',
         'attachment_link',
@@ -35,7 +35,6 @@ class IntlPartner extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'number_of_participants' => 'integer',
-        'number_of_committee' => 'integer',
         'is_archived' => 'boolean',
     ];
 

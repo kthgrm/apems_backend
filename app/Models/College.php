@@ -58,11 +58,11 @@ class College extends Model
     }
 
     /**
-     * Get the international partners for this college.
+     * Get the engagements for this college.
      */
-    public function intlPartners()
+    public function engagements()
     {
-        return $this->hasMany(IntlPartner::class);
+        return $this->hasMany(Engagement::class);
     }
 
     /**

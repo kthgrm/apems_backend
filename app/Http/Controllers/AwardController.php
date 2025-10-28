@@ -67,7 +67,7 @@ class AwardController extends Controller
                 'event_details' => 'required|string',
                 'location' => 'required|string|max:255',
                 'awarding_body' => 'required|string|max:255',
-                'people_involved' => 'nullable|string|max:255',
+                'people_involved' => 'required|string|max:255',
                 'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
             ]);
@@ -138,13 +138,13 @@ class AwardController extends Controller
     public function update(Request $request, Award $award)
     {
         $validatedData = $request->validate([
-            'award_name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'date_received' => 'required|date',
-            'event_details' => 'required|string',
-            'location' => 'required|string|max:255',
-            'awarding_body' => 'required|string|max:255',
-            'people_involved' => 'nullable|string|max:255',
+            'award_name' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string',
+            'date_received' => 'sometimes|required|date',
+            'event_details' => 'sometimes|required|string',
+            'location' => 'sometimes|required|string|max:255',
+            'awarding_body' => 'sometimes|required|string|max:255',
+            'people_involved' => 'sometimes|required|string|max:255',
             'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
             'attachment_link' => 'nullable|url|max:255',
         ]);

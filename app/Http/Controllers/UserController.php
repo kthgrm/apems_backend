@@ -6,6 +6,7 @@ use App\Models\Campus;
 use App\Models\College;
 use App\Models\User;
 use App\Mail\UserCreated;
+use App\Notifications\WelcomeNewUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -116,12 +117,7 @@ class UserController extends Controller
         $user->load(['college', 'college.campus']);
 
         // Send email with temporary password
-        try {
-            Mail::to($user->email)->send(new UserCreated($user, $temporaryPassword));
-        } catch (\Exception $e) {
-            // Log the error but don't fail the user creation
-            Log::error('Failed to send user creation email: ' . $e->getMessage());
-        }
+        $user->notify(new WelcomeNewUser($temporaryPassword));
 
         return response()->json([
             'message' => 'User created successfully. A temporary password has been sent to their email.',
@@ -140,7 +136,6 @@ class UserController extends Controller
         return response()->json([
             'data' => [
                 'id' => $user->id,
-                'name' => $user->name,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
@@ -149,20 +144,12 @@ class UserController extends Controller
                 'college' => $user->college ? [
                     'id' => $user->college->id,
                     'name' => $user->college->name,
+                    'logo' => $user->college->logo,
                     'campus' => $user->college->campus ? [
                         'id' => $user->college->campus->id,
                         'name' => $user->college->campus->name,
                     ] : null,
                 ] : null,
-                'tech_transfers' => $user->techTransfers->map(function ($techTransfer) {
-                    return [
-                        'id' => $techTransfer->id,
-                        'name' => $techTransfer->name,
-                        'category' => $techTransfer->category,
-                        'start_date' => $techTransfer->start_date,
-                        'end_date' => $techTransfer->end_date,
-                    ];
-                }),
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
                 'email_verified_at' => $user->email_verified_at,

@@ -45,36 +45,26 @@ class ResolutionController extends Controller
      */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'resolution_number' => 'required|string|max:255|unique:resolutions,resolution_number',
-            'effectivity' => 'required|date',
-            'expiration' => 'required|date|after:effectivity',
-            'partner_agency' => 'required|string|max:255',
-            'contact_person' => 'required|string|max:255',
-            'contact_number_email' => 'required|string|max:255',
-            'attachment_link' => 'nullable|url',
-            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240', // Max 10MB per file
-        ]);
-
         try {
             // Handle file uploads if present
             $attachmentPaths = [];
+            $title = null;
+
             if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
+                foreach ($request->file('attachments') as $index => $file) {
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                     $path = $file->store('resolution-attachments', 'spaces');
                     $attachmentPaths[] = $path;
+
+                    if ($index === 0 && !$title) {
+                        $title = $originalName;
+                    }
                 }
             }
 
             // Create resolution
             $resolution = Resolution::create([
-                'resolution_number' => $validatedData['resolution_number'],
-                'effectivity' => $validatedData['effectivity'],
-                'expiration' => $validatedData['expiration'],
-                'partner_agency' => $validatedData['partner_agency'],
-                'contact_person' => $validatedData['contact_person'],
-                'contact_number_email' => $validatedData['contact_number_email'],
-                'attachment_link' => $validatedData['attachment_link'] ?? null,
+                'title' => $title,
                 'attachment_paths' => $attachmentPaths,
                 'user_id' => $request->user()->id,
                 'is_archived' => false,
@@ -125,13 +115,7 @@ class ResolutionController extends Controller
     public function update(Request $request, Resolution $resolution)
     {
         $validatedData = $request->validate([
-            'resolution_number' => 'required|string|max:255|unique:resolutions,resolution_number,' . $resolution->id,
-            'effectivity' => 'required|date',
-            'expiration' => 'required|date|after:effectivity',
-            'partner_agency' => 'required|string|max:255',
-            'contact_person' => 'required|string|max:255',
-            'contact_number_email' => 'required|string|max:255',
-            'attachment_link' => 'nullable|url',
+            'title' => 'sometimes|string|max:255',
             'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10240', // Max 10MB per file
             'is_archived' => 'nullable|boolean',
         ]);
@@ -180,14 +164,6 @@ class ResolutionController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Resolution $resolution)
-    {
-        //
     }
 
     /**

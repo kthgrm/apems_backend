@@ -6,18 +6,15 @@ use App\Http\Controllers\CampusController;
 use App\Http\Controllers\CollegeController;
 use App\Http\Controllers\AwardController;
 use App\Http\Controllers\ImpactAssessmentController;
-use App\Http\Controllers\IntlPartnerController;
 use App\Http\Controllers\ModalityController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\TechTransferController;
-use App\Http\Controllers\CampusCollegeController;
-use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EngagementController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
-use App\Models\Campus;
-use App\Models\User;
+use App\Models\Engagement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -72,9 +69,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('awards/{award}/archive', [AwardController::class, 'archive'])
         ->name('awards.archive');
 
-    Route::apiResource('international-partners', IntlPartnerController::class);
-    Route::patch('international-partners/{internationalPartner}/archive', [IntlPartnerController::class, 'archive'])
-        ->name('international-partners.archive');
+    Route::apiResource('engagements', EngagementController::class);
+    Route::patch('engagements/{engagement}/archive', [EngagementController::class, 'archive'])
+        ->name('engagements.archive');
 
     Route::apiResource('resolutions', ResolutionController::class);
     Route::patch('resolutions/{resolution}/archive', [ResolutionController::class, 'archive'])
@@ -88,17 +85,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('impact-assessments/{impactAssessment}/archive', [ImpactAssessmentController::class, 'archive'])
         ->name('impact-assessments.archive');
 
-    // Audit logs (read-only for most users)
-    Route::prefix('audit-logs')->name('audit-logs.')->group(function () {
-        Route::get('/', [AuditLogController::class, 'index'])->name('index');
-        Route::get('/statistics', [AuditLogController::class, 'getStatistics'])->name('statistics');
-        Route::get('/pdf', [AuditLogController::class, 'generatePdf'])->name('pdf');
-        Route::get('/by-date-range', [AuditLogController::class, 'getByDateRange'])->name('by-date-range');
-        Route::get('/user/{userId}', [AuditLogController::class, 'getUserLogs'])->name('user');
-        Route::get('/model/{modelType}/{modelId}', [AuditLogController::class, 'getModelAuditLogs'])->name('model');
-        Route::get('/{auditLog}', [AuditLogController::class, 'show'])->name('show');
-    });
-
     // Dashboard routes
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('/admin-stats', [DashboardController::class, 'getAdminStats'])->name('admin-stats');
@@ -110,7 +96,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Relationship management routes
     Route::prefix('relationships')->name('relationships.')->group(function () {
         Route::get('/campuses/{campus}/colleges', [CampusController::class, 'getCollegesFromCampus'])->name('campus.colleges');
-        // Route::get('/colleges/{college}/campuses', [CampusCollegeController::class, 'getCampusesForCollege'])->name('college.campuses');
     });
 
     // Report routes
@@ -121,8 +106,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/awards', [ReportController::class, 'awards'])->name('awards');
         Route::get('/awards/pdf', [ReportController::class, 'awardsPdf'])->name('awards.pdf');
 
-        Route::get('/international-partners', [ReportController::class, 'internationalPartners'])->name('international-partners');
-        Route::get('/international-partners/pdf', [ReportController::class, 'internationalPartnersPdf'])->name('international-partners.pdf');
+        Route::get('/engagements', [ReportController::class, 'engagements'])->name('engagements');
+        Route::get('/engagements/pdf', [ReportController::class, 'engagementsPdf'])->name('engagements.pdf');
 
         Route::get('/impact-assessments', [ReportController::class, 'impactAssessments'])->name('impact-assessments');
         Route::get('/impact-assessments/pdf', [ReportController::class, 'impactAssessmentsPdf'])->name('impact-assessments.pdf');

@@ -26,7 +26,7 @@ class CampusController extends Controller
                     'awards as awards_count' => function ($query) {
                         $query->where('is_archived', false);
                     },
-                    'intlPartners as intl_partners_count' => function ($query) {
+                    'engagements as engagements_count' => function ($query) {
                         $query->where('is_archived', false);
                     },
                 ])
@@ -229,7 +229,7 @@ class CampusController extends Controller
                     'awards as awards_count' => function ($query) {
                         $query->where('is_archived', false);
                     },
-                    'intlPartners as intl_partners_count' => function ($query) {
+                    'engagements as engagements_count' => function ($query) {
                         $query->where('is_archived', false);
                     },
                 ])

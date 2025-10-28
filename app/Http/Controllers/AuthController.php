@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -31,7 +32,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Audit log for login
-        \App\Models\AuditLog::create([
+        AuditLog::create([
             'user_id' => $user->id,
             'action' => 'login',
             'model_type' => get_class($user),
@@ -66,7 +67,7 @@ class AuthController extends Controller
         }
 
         // Audit log for logout
-        \App\Models\AuditLog::create([
+        AuditLog::create([
             'user_id' => $user->id,
             'action' => 'logout',
             'model_type' => get_class($user),

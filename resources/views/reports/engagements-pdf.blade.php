@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>International Partners Report</title>
+    <title>Engagements Report</title>
     <style>
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
@@ -158,7 +158,7 @@
             margin-top: 2px;
         }
 
-        .duration {
+        .timeline {
             color: #2d3748;
         }
 
@@ -276,8 +276,8 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <h1>International Partners Report</h1>
-        <p>Comprehensive overview of all international partnership activities</p>
+        <h1>Engagements Report</h1>
+        <p>Comprehensive overview of all engagement</p>
         <p>Generated on {{ $generated_at }} by {{ $generated_by }}</p>
     </div>
 
@@ -310,16 +310,6 @@
                     <strong>To Date:</strong> {{ $filters['date_to'] }}
                 </div>
             @endif
-            @if (!empty($filters['participants_min']))
-                <div class="filter-item">
-                    <strong>Min Participants:</strong> {{ $filters['participants_min'] }}
-                </div>
-            @endif
-            @if (!empty($filters['participants_max']))
-                <div class="filter-item">
-                    <strong>Max Participants:</strong> {{ $filters['participants_max'] }}
-                </div>
-            @endif
             @if (!empty($filters['sort_by']))
                 <div class="filter-item">
                     <strong>Sort By:</strong> {{ ucfirst(str_replace('_', ' ', $filters['sort_by'])) }}
@@ -329,60 +319,63 @@
         </div>
     @endif
 
-    <!-- International Partners Table -->
+    <!-- Engagements Table -->
     <div class="table-container">
-        @if ($internationalPartners->count() > 0)
+        @if ($engagements->count() > 0)
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 22%">Partner & Activity</th>
-                        <th style="width: 12%">Location</th>
+                        <th style="width: 18%">Partner & Activity</th>
+                        <th style="width: 11%">Location</th>
                         <th style="width: 18%">College</th>
                         <th style="width: 12%">Participants</th>
-                        <th style="width: 15%">Duration</th>
+                        <th style="width: 18%">Faculty Involved</th>
+                        <th style="width: 14%">Timeline</th>
                         <th style="width: 13%">Created</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($internationalPartners as $partner)
+                    @foreach ($engagements as $engagement)
                         <tr>
                             <td>
-                                <div class="partner-name">{{ $partner->agency_partner }}</div>
-                                @if ($partner->activity_conducted)
-                                    <div class="activity">{{ Str::limit($partner->activity_conducted, 80) }}</div>
+                                <div class="partner-name">{{ $engagement->agency_partner }}</div>
+                                @if ($engagement->activity_conducted)
+                                    <div class="activity">{{ Str::limit($engagement->activity_conducted, 80) }}</div>
                                 @endif
                             </td>
                             <td class="location">
-                                {{ $partner->location ?? 'Not specified' }}
+                                {{ $engagement->location ?? 'Not specified' }}
                             </td>
                             <td class="institution">
                                 <div class="campus">
-                                    {{ $partner->college->campus->name ?? 'N/A' }}
+                                    {{ $engagement->college->campus->name ?? 'N/A' }}
                                 </div>
                                 <div class="college">
-                                    {{ $partner->college->name ?? 'N/A' }}
+                                    {{ $engagement->college->name ?? 'N/A' }}
                                 </div>
                             </td>
                             <td>
                                 <div class="participants">
-                                    {{ $partner->number_of_participants ? number_format($partner->number_of_participants) . ' participants' : 'Not specified' }}
+                                    {{ $engagement->number_of_participants ? number_format($engagement->number_of_participants) . ' participants' : 'Not specified' }}
                                 </div>
-                                @if ($partner->number_of_committee)
-                                    <div class="committee">Committee: {{ $partner->number_of_committee }}</div>
-                                @endif
                             </td>
-                            <td class="duration">
+                            <td>
+                                <div class="faculty-involved">
+                                    {{ $engagement->faculty_involved ? $engagement->faculty_involved : 'Not specified' }}
+                                </div>
+                            </td>
+                            <td class="timeline">
                                 <div>
-                                    {{ $partner->start_date ? $partner->start_date->format('M d, Y') : 'Not specified' }}
+                                    {{ $engagement->start_date ? $engagement->start_date->format('M d, Y') : 'Not specified' }}
                                 </div>
                                 <div style="color: #666;">to
-                                    {{ $partner->end_date ? $partner->end_date->format('M d, Y') : 'Not specified' }}
+                                    {{ $engagement->end_date ? $engagement->end_date->format('M d, Y') : 'Not specified' }}
                                 </div>
                             </td>
                             <td class="created-info">
-                                <div>{{ $partner->created_at->format('M d, Y') }}</div>
+                                <div>{{ $engagement->created_at->format('M d, Y') }}</div>
                                 <div class="created-by">
-                                    {{ $partner->user ? $partner->user->first_name . ' ' . $partner->user->last_name : 'N/A' }}
+                                    {{ $engagement->user ? $engagement->user->first_name . ' ' . $engagement->user->last_name : 'N/A' }}
                                 </div>
                             </td>
                         </tr>
@@ -391,7 +384,7 @@
             </table>
         @else
             <div class="no-data">
-                <p>No international partners found matching the specified criteria.</p>
+                <p>No engagements found matching the specified criteria.</p>
             </div>
         @endif
     </div>
@@ -399,9 +392,9 @@
     <!-- Footer -->
     <div class="footer">
         <p>
-            International Partners Report |
+            Engagements Report |
             Generated: {{ $generated_at }} |
-            Total Partners in Report: {{ $internationalPartners->count() }}
+            Total Engagements in Report: {{ $engagements->count() }}
         </p>
     </div>
 </body>

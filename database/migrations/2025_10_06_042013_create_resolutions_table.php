@@ -15,14 +15,7 @@ return new class extends Migration
         Schema::create('resolutions', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class)->constrained()->restrictOnDelete();
-            $table->string('resolution_number')->unique();
-            $table->date('effectivity');
-            $table->date('expiration');
-            $table->string('contact_person');
-            $table->string('contact_number_email');
-            $table->string('partner_agency');
-            $table->json('attachment_paths')->nullable();
-            $table->string('attachment_link')->nullable();
+            $table->json('attachment_paths');
             $table->boolean('is_archived')->default(false);
             $table->timestamps();
         });

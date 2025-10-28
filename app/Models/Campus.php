@@ -48,11 +48,11 @@ class Campus extends Model
     }
 
     /**
-     * Get the intl partners for this campus.
+     * Get the engagements for this campus.
      */
-    public function intlPartners()
+    public function engagements()
     {
-        return $this->hasManyThrough(IntlPartner::class, College::class);
+        return $this->hasManyThrough(Engagement::class, College::class);
     }
 
     /**
