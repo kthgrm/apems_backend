@@ -231,36 +231,6 @@
                     </div>
                 @endif
             @endif
-            @if (!empty($filters['tech_transfer_id']))
-                @php
-                    $techTransfer = \App\Models\TechTransfer::find($filters['tech_transfer_id']);
-                @endphp
-                @if ($techTransfer)
-                    <div class="filter-item">
-                        <strong>Project:</strong> {{ $techTransfer->name }}
-                    </div>
-                @endif
-            @endif
-            @if (!empty($filters['direct_min']))
-                <div class="filter-item">
-                    <strong>Min Direct Beneficiaries:</strong> {{ number_format($filters['direct_min']) }}
-                </div>
-            @endif
-            @if (!empty($filters['direct_max']))
-                <div class="filter-item">
-                    <strong>Max Direct Beneficiaries:</strong> {{ number_format($filters['direct_max']) }}
-                </div>
-            @endif
-            @if (!empty($filters['indirect_min']))
-                <div class="filter-item">
-                    <strong>Min Indirect Beneficiaries:</strong> {{ number_format($filters['indirect_min']) }}
-                </div>
-            @endif
-            @if (!empty($filters['indirect_max']))
-                <div class="filter-item">
-                    <strong>Max Indirect Beneficiaries:</strong> {{ number_format($filters['indirect_max']) }}
-                </div>
-            @endif
             @if (!empty($filters['date_from']))
                 <div class="filter-item">
                     <strong>From Date:</strong> {{ date('M d, Y', strtotime($filters['date_from'])) }}
@@ -286,33 +256,22 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 25%">Project & Beneficiary</th>
-                        <th style="width: 15%">Geographic Coverage</th>
+                        <th style="width: 12%">RREID</th>
+                        <th style="width: 20%">Project</th>
                         <th style="width: 18%">College</th>
-                        <th style="width: 12%">Impact Beneficiaries</th>
-                        <th style="width: 12%">Total Impact</th>
+                        <th style="width: 12%">Title</th>
+                        <th style="width: 20%">Description</th>
                         <th style="width: 18%">Created</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @php
-                        $totalDirect = 0;
-                        $totalIndirect = 0;
-                    @endphp
                     @foreach ($assessments as $assessment)
-                        @php
-                            $totalDirect += $assessment->num_direct_beneficiary;
-                            $totalIndirect += $assessment->num_indirect_beneficiary;
-                        @endphp
                         <tr>
+                            <td class="id">
+                                {{ $assessment->id ?? 'Not specified' }}
+                            </td>
                             <td>
                                 <div class="partner-name">{{ $assessment->techTransfer->name ?? 'N/A' }}</div>
-                                @if ($assessment->beneficiary)
-                                    <div class="activity">{{ Str::limit($assessment->beneficiary, 80) }}</div>
-                                @endif
-                            </td>
-                            <td class="location">
-                                {{ $assessment->geographic_coverage ?? 'Not specified' }}
                             </td>
                             <td class="institution">
                                 <div class="campus">
@@ -322,19 +281,11 @@
                                     {{ $assessment->techTransfer->college->name ?? 'N/A' }}
                                 </div>
                             </td>
-                            <td>
-                                <div class="participants">
-                                    Direct: {{ number_format($assessment->num_direct_beneficiary) }}
-                                </div>
-                                <div class="committee">
-                                    Indirect: {{ number_format($assessment->num_indirect_beneficiary) }}
-                                </div>
+                            <td class="title">
+                                {{ $assessment->title ?? 'Not specified' }}
                             </td>
-                            <td class="duration">
-                                <div class="participants">
-                                    {{ number_format($assessment->num_direct_beneficiary + $assessment->num_indirect_beneficiary) }}
-                                </div>
-                                <div class="committee">Total beneficiaries</div>
+                            <td class="description">
+                                {{ $assessment->description ?? 'Not specified' }}
                             </td>
                             <td class="created-info">
                                 <div>{{ $assessment->created_at->format('M d, Y') }}</div>

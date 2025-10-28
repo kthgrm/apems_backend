@@ -581,9 +581,9 @@ class ReportController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('beneficiary', 'like', "%{$search}%")
-                    ->orWhere('geographic_coverage', 'like', "%{$search}%");
+
+            $query->whereHas('techTransfer', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
             });
         }
 
@@ -658,9 +658,9 @@ class ReportController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('beneficiary', 'like', "%{$search}%")
-                    ->orWhere('geographic_coverage', 'like', "%{$search}%");
+
+            $query->whereHas('techTransfer', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
             });
         }
 
