@@ -35,7 +35,7 @@ class DashboardController extends Controller
                         'id' => $project->id,
                         'name' => $project->name,
                         'type' => 'Project',
-                        'user_name' => $project->user->name ?? 'Unknown User',
+                        'user_name' => $project->user->first_name . ' ' . $project->user->last_name ?? 'Unknown User',
                         'campus' => $project->college?->campus?->name ?? 'N/A',
                         'college' => $project->college?->name ?? 'N/A',
                         'created_at' => $project->created_at,

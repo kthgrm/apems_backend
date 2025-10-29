@@ -140,6 +140,13 @@ class ReportController extends Controller
         $query = TechTransfer::with(['user', 'college', 'college.campus'])
             ->where('is_archived', false);
 
+        $user = $request->user();
+
+        if ($user->role === 'user') {
+            // Limit to user's own submissions
+            $query->where('user_id', $user->id);
+        }
+
         // Apply the same filters as the main report
         if ($request->filled('campus_id')) {
             $query->whereHas('college', function ($q) use ($request) {
@@ -316,6 +323,13 @@ class ReportController extends Controller
         $query = Award::with(['user', 'college', 'college.campus'])
             ->where('is_archived', false);
 
+        $user = $request->user();
+
+        if ($user->role === 'user') {
+            // Limit to user's own submissions
+            $query->where('user_id', $user->id);
+        }
+
         if ($request->filled('campus_id')) {
             $query->whereHas('college', function ($q) use ($request) {
                 $q->where('campus_id', $request->campus_id);
@@ -475,6 +489,13 @@ class ReportController extends Controller
         $query = Engagement::with(['user', 'college', 'college.campus'])
             ->where('is_archived', false);
 
+        $user = $request->user();
+
+        if ($user->role === 'user') {
+            // Limit to user's own submissions
+            $query->where('user_id', $user->id);
+        }
+
         if ($request->filled('campus_id')) {
             $query->whereHas('college', function ($q) use ($request) {
                 $q->where('campus_id', $request->campus_id);
@@ -633,6 +654,13 @@ class ReportController extends Controller
         $query = ImpactAssessment::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
             ->where('is_archived', false);
 
+        $user = $request->user();
+
+        if ($user->role === 'user') {
+            // Limit to user's own submissions
+            $query->where('user_id', $user->id);
+        }
+
         if ($request->filled('campus_id')) {
             $query->whereHas('techTransfer.college', function ($q) use ($request) {
                 $q->where('campus_id', $request->campus_id);
@@ -785,6 +813,13 @@ class ReportController extends Controller
     {
         $query = Modality::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
             ->where('is_archived', false);
+
+        $user = $request->user();
+
+        if ($user->role === 'user') {
+            // Limit to user's own submissions
+            $query->where('user_id', $user->id);
+        }
 
         if ($request->filled('campus_id')) {
             $query->whereHas('techTransfer.college', function ($q) use ($request) {
