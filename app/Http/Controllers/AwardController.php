@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Award;
+use App\Traits\Reviewable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class AwardController extends Controller
 {
+    use Reviewable;
     /**
      * Display a listing of the resource.
      * GET /api/awards-recognition
@@ -17,6 +19,14 @@ class AwardController extends Controller
     {
         try {
             $query = Award::with(['user', 'college', 'college.campus'])->where('is_archived', false);
+
+            $user = $request->user();
+
+            if ($user->role !== 'admin') {
+                // Non-admins: only their own approved submissions
+                $query->where('user_id', $user->id)
+                    ->where('status', 'approved');
+            }
 
             // Filter by user if provided
             if ($request->has('user_id')) {
@@ -235,5 +245,10 @@ class AwardController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function review(Request $request, Award $award)
+    {
+        return $this->reviewItem($request, $award);
     }
 }

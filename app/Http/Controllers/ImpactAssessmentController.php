@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ImpactAssessment;
+use App\Traits\Reviewable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -10,6 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class ImpactAssessmentController extends Controller
 {
+    use Reviewable;
     /**
      * Display a listing of the resource.
      */
@@ -18,6 +20,14 @@ class ImpactAssessmentController extends Controller
         try {
             $query = ImpactAssessment::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
                 ->where('is_archived', false);
+
+            $user = $request->user();
+
+            if ($user->role !== 'admin') {
+                // Non-admins: only their own approved submissions
+                $query->where('user_id', $user->id)
+                    ->where('status', 'approved');
+            }
 
             if ($request->has('campus')) {
                 // ImpactAssessment -> techTransfer -> college -> campus
@@ -253,5 +263,10 @@ class ImpactAssessmentController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function review(Request $request, ImpactAssessment $impactAssessment)
+    {
+        return $this->reviewItem($request, $impactAssessment);
     }
 }

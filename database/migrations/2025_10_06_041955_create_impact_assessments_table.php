@@ -22,6 +22,9 @@ return new class extends Migration
             $table->text('description');
             $table->json('attachment_paths')->nullable();
 
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->string('remarks')->nullable();
+
             $table->boolean('is_archived')->default(false);
 
             $table->timestamps();

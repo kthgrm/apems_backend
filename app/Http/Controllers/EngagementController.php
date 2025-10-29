@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Engagement;
+use App\Traits\Reviewable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 class EngagementController extends Controller
 {
+    use Reviewable;
     /**
      * Display a listing of the resource.
      */
@@ -17,6 +19,14 @@ class EngagementController extends Controller
     {
         try {
             $query = Engagement::with(['user', 'college', 'college.campus'])->where('is_archived', false);
+
+            $user = $request->user();
+
+            if ($user->role !== 'admin') {
+                // Non-admins: only their own approved submissions
+                $query->where('user_id', $user->id)
+                    ->where('status', 'approved');
+            }
 
             // Filter by user if provided
             if ($request->has('user_id')) {
@@ -234,5 +244,10 @@ class EngagementController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function review(Request $request, Engagement $engagement)
+    {
+        return $this->reviewItem($request, $engagement);
     }
 }

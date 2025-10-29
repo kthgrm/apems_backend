@@ -27,6 +27,9 @@ return new class extends Migration
             $table->string('partner_agency')->nullable();
             $table->string('hosted_by')->nullable();
 
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->string('remarks')->nullable();
+
             $table->boolean('is_archived')->default(false);
 
             $table->timestamps();

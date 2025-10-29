@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Modality;
+use App\Traits\Reviewable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class ModalityController extends Controller
 {
+    use Reviewable;
     /**
      * Display a listing of the resource.
      */
@@ -17,6 +19,14 @@ class ModalityController extends Controller
         try {
             $query = Modality::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
                 ->where('is_archived', false);
+
+            $user = $request->user();
+
+            if ($user->role !== 'admin') {
+                // Non-admins: only their own approved submissions
+                $query->where('user_id', $user->id)
+                    ->where('status', 'approved');
+            }
 
             if ($request->has('campus')) {
                 // modality -> techTransfer -> college -> campus
@@ -233,5 +243,10 @@ class ModalityController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function review(Request $request, Modality $modality)
+    {
+        return $this->reviewItem($request, $modality);
     }
 }

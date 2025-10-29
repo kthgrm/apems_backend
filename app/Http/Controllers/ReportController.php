@@ -24,7 +24,8 @@ class ReportController extends Controller
     public function technologyTransfers(Request $request): JsonResponse
     {
         $query = TechTransfer::with(['user', 'college', 'college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         // Apply filters
         if ($request->filled('campus_id')) {
@@ -138,7 +139,8 @@ class ReportController extends Controller
     public function technologyTransfersPdf(Request $request)
     {
         $query = TechTransfer::with(['user', 'college', 'college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         $user = $request->user();
 
@@ -242,7 +244,8 @@ class ReportController extends Controller
     public function awards(Request $request): JsonResponse
     {
         $query = Award::with(['user', 'college', 'college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         // Apply filters
         if ($request->filled('campus_id')) {
@@ -321,7 +324,8 @@ class ReportController extends Controller
     public function awardsPdf(Request $request)
     {
         $query = Award::with(['user', 'college', 'college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         $user = $request->user();
 
@@ -409,7 +413,8 @@ class ReportController extends Controller
     public function engagements(Request $request): JsonResponse
     {
         $query = Engagement::with(['user', 'college', 'college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         if ($request->filled('campus_id')) {
             $query->whereHas('college', function ($q) use ($request) {
@@ -487,7 +492,8 @@ class ReportController extends Controller
     public function engagementsPdf(Request $request)
     {
         $query = Engagement::with(['user', 'college', 'college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         $user = $request->user();
 
@@ -575,7 +581,8 @@ class ReportController extends Controller
     public function impactAssessments(Request $request): JsonResponse
     {
         $query = ImpactAssessment::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         if ($request->filled('campus_id')) {
             $query->whereHas('techTransfer.college', function ($q) use ($request) {
@@ -652,7 +659,8 @@ class ReportController extends Controller
     public function impactAssessmentsPdf(Request $request)
     {
         $query = ImpactAssessment::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         $user = $request->user();
 
@@ -741,7 +749,8 @@ class ReportController extends Controller
     public function modalities(Request $request): JsonResponse
     {
         $query = Modality::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         if ($request->filled('campus_id')) {
             $query->whereHas('techTransfer.college', function ($q) use ($request) {
@@ -812,7 +821,8 @@ class ReportController extends Controller
     public function modalitiesPdf(Request $request)
     {
         $query = Modality::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
-            ->where('is_archived', false);
+            ->where('is_archived', false)
+            ->where('status', 'approved');
 
         $user = $request->user();
 

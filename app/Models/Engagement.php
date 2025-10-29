@@ -27,6 +27,8 @@ class Engagement extends Model
         'narrative',
         'attachment_paths',
         'attachment_link',
+        'status',
+        'remarks',
         'is_archived',
     ];
 

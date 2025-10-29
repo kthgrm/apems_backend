@@ -13,6 +13,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EngagementController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Models\Engagement;
 use Illuminate\Http\Request;
@@ -92,6 +93,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User dashboard route
     Route::get('/user/dashboard', [UserDashboardController::class, 'index'])->name('user.dashboard');
+
+    Route::get('/review', [ReviewController::class, 'getPendingSubmissions'])
+        ->name('reviews.submissions');
+    Route::post('/review/{type}/{id}', [ReviewController::class, 'reviewSubmission'])
+        ->name('reviews.action');
 
     // Relationship management routes
     Route::prefix('relationships')->name('relationships.')->group(function () {

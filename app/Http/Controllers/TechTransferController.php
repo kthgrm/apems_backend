@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TechTransfer;
+use App\Traits\Reviewable;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 class TechTransferController extends Controller
 {
+    use Reviewable;
     /**
      * Display a listing of tech transfers.
      * GET /api/tech-transfers
@@ -19,6 +21,14 @@ class TechTransferController extends Controller
     {
         try {
             $query = TechTransfer::with(['user', 'college', 'college.campus'])->where('is_archived', false);
+
+            $user = $request->user();
+
+            if ($user->role !== 'admin') {
+                // Non-admins: only their own approved submissions
+                $query->where('user_id', $user->id)
+                    ->where('status', 'approved');
+            }
 
             $techTransfers = $query->orderBy('created_at', 'desc')->get();
 
@@ -67,6 +77,7 @@ class TechTransferController extends Controller
             $user = $request->user();
             $validatedData['user_id'] = $user->id;
             $validatedData['college_id'] = $user->college_id;
+            $validatedData['status'] = 'pending';
 
             // Handle multiple file uploads
             if ($request->hasFile('attachments')) {
@@ -272,6 +283,11 @@ class TechTransferController extends Controller
         }
     }
 
+    public function review(Request $request, TechTransfer $techTransfer)
+    {
+        return $this->reviewItem($request, $techTransfer);
+    }
+
     public function getUserTechTransfers(Request $request): JsonResponse
     {
         try {
@@ -279,7 +295,8 @@ class TechTransferController extends Controller
 
             $query = TechTransfer::with(['college', 'college.campus'])
                 ->where('user_id', $user->id)
-                ->where('is_archived', false);
+                ->where('is_archived', false)
+                ->where('status', 'approved');
 
             // You can still apply other filters like search, category, etc.
             if ($request->has('search')) {
