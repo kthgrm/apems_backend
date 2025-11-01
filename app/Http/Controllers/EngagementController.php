@@ -18,14 +18,13 @@ class EngagementController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Engagement::with(['user', 'college', 'college.campus'])->where('is_archived', false);
+            $query = Engagement::with(['user', 'college', 'college.campus'])->where('is_archived', false)->where('status', 'approved');
 
             $user = $request->user();
 
             if ($user->role !== 'admin') {
-                // Non-admins: only their own approved submissions
-                $query->where('user_id', $user->id)
-                    ->where('status', 'approved');
+                // Non-admins: only their own submissions
+                $query->where('user_id', $user->id);
             }
 
             // Filter by user if provided
@@ -122,8 +121,30 @@ class EngagementController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Engagement $engagement): JsonResponse
+    public function show(Engagement $engagement, Request $request): JsonResponse
     {
+        $user = $request->user();
+        if ($user->role !== 'admin' && $user->id !== $engagement->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        // if ($engagement->status === 'rejected') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Engagement not found',
+        //     ], 404);
+        // }
+
+        //check if archived
+        if ($engagement->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Engagement not found',
+            ], 404);
+        }
         try {
             $engagement->load(['user', 'college', 'college.campus']);
 

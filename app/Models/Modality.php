@@ -26,6 +26,8 @@ class Modality extends Model
         'partner_agency',
         'hosted_by',
         'is_archived',
+        'status',
+        'remarks'
     ];
 
     protected $casts = [

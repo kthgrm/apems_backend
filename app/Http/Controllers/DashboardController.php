@@ -8,6 +8,8 @@ use App\Models\Award;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\Engagement;
+use App\Models\ImpactAssessment;
+use App\Models\Modality;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -23,9 +25,9 @@ class DashboardController extends Controller
         // Overall statistics
         $overallStats = [
             'total_users' => User::count(),
-            'total_projects' => TechTransfer::where('is_archived', false)->count(),
-            'total_awards' => Award::where('is_archived', false)->count(),
-            'total_engagements' => Engagement::where('is_archived', false)->count(),
+            'total_projects' => TechTransfer::where('is_archived', false)->where('status', 'approved')->count(),
+            'total_awards' => Award::where('is_archived', false)->where('status', 'approved')->count(),
+            'total_engagements' => Engagement::where('is_archived', false)->where('status', 'approved')->count(),
             'total_campuses' => Campus::count(),
             'total_colleges' => College::count(),
         ];
@@ -39,6 +41,9 @@ class DashboardController extends Controller
         // Get available years based on data
         $availableYears = $this->getAvailableYears();
 
+        // Review statistics
+        $reviewStats = $this->getReviewStats();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -47,6 +52,7 @@ class DashboardController extends Controller
                 'campus_stats' => $campusStats,
                 'selected_year' => $year,
                 'available_years' => $availableYears,
+                'review_stats' => $reviewStats
             ],
             'message' => 'Dashboard statistics retrieved successfully'
         ], 200);
@@ -79,14 +85,17 @@ class DashboardController extends Controller
             $endDate = date('Y-m-t', strtotime($startDate));
 
             $projects = TechTransfer::where('is_archived', false)
+                ->where('status', 'approved')
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
             $awards = Award::where('is_archived', false)
+                ->where('status', 'approved')
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
             $engagements = Engagement::where('is_archived', false)
+                ->where('status', 'approved')
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
@@ -113,16 +122,19 @@ class DashboardController extends Controller
             $collegeIds = $campus->colleges->pluck('id')->toArray();
 
             $totalProjects = TechTransfer::where('is_archived', false)
+                ->where('status', 'approved')
                 ->whereIn('college_id', $collegeIds)
                 ->whereYear('created_at', $year)
                 ->count();
 
             $totalAwards = Award::where('is_archived', false)
+                ->where('status', 'approved')
                 ->whereIn('college_id', $collegeIds)
                 ->whereYear('created_at', $year)
                 ->count();
 
             $totalEngagements = Engagement::where('is_archived', false)
+                ->where('status', 'approved')
                 ->whereIn('college_id', $collegeIds)
                 ->whereYear('created_at', $year)
                 ->count();
@@ -175,5 +187,28 @@ class DashboardController extends Controller
         }
 
         return array_values(array_map('strval', $years));
+    }
+
+    /**
+     * Get review statistics
+     */
+    private function getReviewStats(): array
+    {
+        $totalTechTransferReviews = TechTransfer::where('status', 'pending')->where('is_archived', false)->count();
+        $totalAwardReviews = Award::where('status', 'pending')->where('is_archived', false)->count();
+        $totalEngagementReviews = Engagement::where('status', 'pending')->where('is_archived', false)->count();
+        $totalModalityReviews = Modality::where('status', 'pending')->where('is_archived', false)->count();
+        $totalImpactAssessmentReviews = ImpactAssessment::where('status', 'pending')->where('is_archived', false)->count();
+
+        $totalReviews = $totalTechTransferReviews + $totalAwardReviews + $totalEngagementReviews + $totalModalityReviews + $totalImpactAssessmentReviews;
+
+        return [
+            'total' => $totalReviews,
+            'tech_transfers' => $totalTechTransferReviews,
+            'awards' => $totalAwardReviews,
+            'engagements' => $totalEngagementReviews,
+            'modalities' => $totalModalityReviews,
+            'impact_assessments' => $totalImpactAssessmentReviews,
+        ];
     }
 }

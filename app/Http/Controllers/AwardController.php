@@ -18,14 +18,13 @@ class AwardController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Award::with(['user', 'college', 'college.campus'])->where('is_archived', false);
+            $query = Award::with(['user', 'college', 'college.campus'])->where('is_archived', false)->where('status', 'approved');
 
             $user = $request->user();
 
             if ($user->role !== 'admin') {
-                // Non-admins: only their own approved submissions
-                $query->where('user_id', $user->id)
-                    ->where('status', 'approved');
+                // Non-admins: only their own submissions
+                $query->where('user_id', $user->id);
             }
 
             // Filter by user if provided
@@ -123,10 +122,33 @@ class AwardController extends Controller
      * Display the specified resource.
      * GET /api/awards-recognition/{award}
      */
-    public function show(Award $award)
+    public function show(Award $award, Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'admin' && $user->id !== $award->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        // if ($award->status === 'rejected') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Award not found',
+        //     ], 404);
+        // }
+
+        //check if archived
+        if ($award->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Award not found',
+            ], 404);
+        }
         try {
             $award->load(['user', 'college', 'college.campus']);
+
 
             return response()->json([
                 'success' => true,

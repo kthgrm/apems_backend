@@ -27,6 +27,8 @@ class Award extends Model
         'attachment_paths',
         'attachment_link',
         'is_archived',
+        'status',
+        'remarks'
     ];
 
     protected $casts = [

@@ -14,7 +14,7 @@ class ReviewController extends Controller
 {
     public function getPendingSubmissions(Request $request): JsonResponse
     {
-        $type = $request->query('type', 'all'); // all, tech-transfers, awards, etc.
+        $type = $request->query('type', 'all');
 
         $submissions = [];
 

@@ -20,14 +20,13 @@ class TechTransferController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = TechTransfer::with(['user', 'college', 'college.campus'])->where('is_archived', false);
+            $query = TechTransfer::with(['user', 'college', 'college.campus'])->where('is_archived', false)->where('status', 'approved');
 
             $user = $request->user();
 
             if ($user->role !== 'admin') {
-                // Non-admins: only their own approved submissions
-                $query->where('user_id', $user->id)
-                    ->where('status', 'approved');
+                // Non-admins: only their own submissions
+                $query->where('user_id', $user->id);
             }
 
             $techTransfers = $query->orderBy('created_at', 'desc')->get();
@@ -126,11 +125,18 @@ class TechTransferController extends Controller
             ], 403);
         }
 
+        // if ($techTransfer->status === 'rejected') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Tech transfer not found',
+        //     ], 404);
+        // }
+
         //check if archived
         if ($techTransfer->is_archived) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tech transfer is archived',
+                'message' => 'Tech transfer not found',
             ], 404);
         }
 

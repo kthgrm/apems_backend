@@ -21,13 +21,16 @@ class CampusController extends Controller
             $campuses = Campus::with('colleges')
                 ->withCount([
                     'techTransfers as tech_transfers_count' => function ($query) {
-                        $query->where('is_archived', false);
+                        $query->where('is_archived', false)
+                            ->where('status', 'approved');
                     },
                     'awards as awards_count' => function ($query) {
-                        $query->where('is_archived', false);
+                        $query->where('is_archived', false)
+                            ->where('status', 'approved');
                     },
                     'engagements as engagements_count' => function ($query) {
-                        $query->where('is_archived', false);
+                        $query->where('is_archived', false)
+                            ->where('status', 'approved');
                     },
                 ])
                 ->get();
@@ -36,6 +39,7 @@ class CampusController extends Controller
             $campuses->each(function ($campus) {
                 $campus->impact_assessments_count = $campus->impactAssessments()
                     ->where('is_archived', false)
+                    ->where('status', 'approved')
                     ->count();
             });
 
@@ -43,6 +47,7 @@ class CampusController extends Controller
             $campuses->each(function ($campus) {
                 $campus->modalities_count = $campus->modalities()
                     ->where('is_archived', false)
+                    ->where('status', 'approved')
                     ->count();
             });
 
@@ -224,13 +229,16 @@ class CampusController extends Controller
             $colleges = $campus->colleges()
                 ->withCount([
                     'techTransfers as tech_transfers_count' => function ($query) {
-                        $query->where('is_archived', false);
+                        $query->where('is_archived', false)
+                            ->where('status', 'approved');
                     },
                     'awards as awards_count' => function ($query) {
-                        $query->where('is_archived', false);
+                        $query->where('is_archived', false)
+                            ->where('status', 'approved');
                     },
                     'engagements as engagements_count' => function ($query) {
-                        $query->where('is_archived', false);
+                        $query->where('is_archived', false)
+                            ->where('status', 'approved');
                     },
                 ])
                 ->get();
@@ -239,6 +247,7 @@ class CampusController extends Controller
             $colleges->each(function ($college) {
                 $college->impact_assessments_count = $college->impactAssessments()
                     ->where('is_archived', false)
+                    ->where('status', 'approved')
                     ->count();
             });
 
@@ -246,6 +255,7 @@ class CampusController extends Controller
             $colleges->each(function ($college) {
                 $college->modalities_count = $college->modalities()
                     ->where('is_archived', false)
+                    ->where('status', 'approved')
                     ->count();
             });
 

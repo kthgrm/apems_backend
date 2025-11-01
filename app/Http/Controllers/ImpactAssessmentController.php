@@ -19,14 +19,14 @@ class ImpactAssessmentController extends Controller
     {
         try {
             $query = ImpactAssessment::with(['user', 'techTransfer.college', 'techTransfer.college.campus'])
-                ->where('is_archived', false);
+                ->where('is_archived', false)
+                ->where('status', 'approved');
 
             $user = $request->user();
 
             if ($user->role !== 'admin') {
-                // Non-admins: only their own approved submissions
-                $query->where('user_id', $user->id)
-                    ->where('status', 'approved');
+                // Non-admins: only their own
+                $query->where('user_id', $user->id);
             }
 
             if ($request->has('campus')) {

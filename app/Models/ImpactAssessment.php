@@ -21,6 +21,8 @@ class ImpactAssessment extends Model
         'description',
         'attachment_paths',
         'is_archived',
+        'status',
+        'remarks'
     ];
 
     protected $casts = [
