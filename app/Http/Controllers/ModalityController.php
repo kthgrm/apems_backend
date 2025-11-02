@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Modality;
 use App\Traits\Reviewable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -176,6 +177,11 @@ class ModalityController extends Controller
                 'hosted_by' => 'required|string|max:255',
             ]);
 
+            if ($modality->status === 'rejected') {
+                $validatedData['status'] = 'pending';
+                $validatedData['remarks'] = null;
+            }
+
             $modality->update($validatedData);
             $modality->load(['user', 'techTransfer.college', 'techTransfer.college.campus']);
 
@@ -248,5 +254,30 @@ class ModalityController extends Controller
     public function review(Request $request, Modality $modality)
     {
         return $this->reviewItem($request, $modality);
+    }
+
+    public function getUserModalities(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            $query = Modality::with(['techTransfer.college', 'techTransfer.college.campus', 'user'])
+                ->where('user_id', $user->id)
+                ->where('is_archived', false);
+
+            $modalities = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $modalities,
+                'message' => 'User modalities retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve user modalities',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

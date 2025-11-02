@@ -88,7 +88,7 @@ class ReviewController extends Controller
     {
         $validated = $request->validate([
             'status' => 'required|in:approved,rejected',
-            'review_notes' => 'nullable|string'
+            'remarks' => 'nullable|string'
         ]);
 
         $model = match ($type) {

@@ -69,10 +69,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('awards', AwardController::class);
     Route::patch('awards/{award}/archive', [AwardController::class, 'archive'])
         ->name('awards.archive');
+    Route::get('user/awards', [AwardController::class, 'getUserAwards'])
+        ->name('user.awards');
 
     Route::apiResource('engagements', EngagementController::class);
     Route::patch('engagements/{engagement}/archive', [EngagementController::class, 'archive'])
         ->name('engagements.archive');
+    Route::get('user/engagements', [EngagementController::class, 'getUserEngagements'])
+        ->name('user.engagements');
 
     Route::apiResource('resolutions', ResolutionController::class);
     Route::patch('resolutions/{resolution}/archive', [ResolutionController::class, 'archive'])
@@ -81,10 +85,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('modalities', ModalityController::class);
     Route::patch('modalities/{modality}/archive', [ModalityController::class, 'archive'])
         ->name('modalities.archive');
+    Route::get('user/modalities', [ModalityController::class, 'getUserModalities'])
+        ->name('user.modalities');
 
     Route::apiResource('impact-assessments', ImpactAssessmentController::class);
     Route::patch('impact-assessments/{impactAssessment}/archive', [ImpactAssessmentController::class, 'archive'])
         ->name('impact-assessments.archive');
+    Route::get('user/impact-assessments', [ImpactAssessmentController::class, 'getUserImpactAssessments'])
+        ->name('user.impact-assessments');
 
     // Dashboard routes
     Route::prefix('dashboard')->name('dashboard.')->group(function () {

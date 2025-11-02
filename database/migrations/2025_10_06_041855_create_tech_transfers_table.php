@@ -35,6 +35,8 @@ return new class extends Migration
             $table->enum('copyright', ['yes', 'no', 'pending'])->default('no');
             $table->text('ip_details')->nullable();
 
+            $table->json('sdg_goals');
+
             $table->json('attachment_paths')->nullable();
             $table->string('attachment_link')->nullable();
 

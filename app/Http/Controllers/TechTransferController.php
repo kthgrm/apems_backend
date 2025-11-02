@@ -70,13 +70,13 @@ class TechTransferController extends Controller
                 'ip_details' => 'nullable|string',
                 'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
-                'is_archived' => 'nullable|boolean',
+                'sdg_goals' => 'required|array|min:1',
+                'sdg_goals.*' => 'string',
             ]);
 
             $user = $request->user();
             $validatedData['user_id'] = $user->id;
             $validatedData['college_id'] = $user->college_id;
-            $validatedData['status'] = 'pending';
 
             // Handle multiple file uploads
             if ($request->hasFile('attachments')) {
@@ -124,13 +124,6 @@ class TechTransferController extends Controller
                 'message' => 'Unauthorized',
             ], 403);
         }
-
-        // if ($techTransfer->status === 'rejected') {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Tech transfer not found',
-        //     ], 404);
-        // }
 
         //check if archived
         if ($techTransfer->is_archived) {
@@ -196,6 +189,8 @@ class TechTransferController extends Controller
                 'contact_phone' => 'nullable|string|max:255',
                 'copyright' => 'sometimes|required|string|in:yes,no,pending',
                 'ip_details' => 'nullable|string',
+                'sdg_goals' => 'required|array|min:1',
+                'sdg_goals.*' => 'string',
                 'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',
             ]);
@@ -218,6 +213,11 @@ class TechTransferController extends Controller
                     $attachmentPaths[] = $path;
                 }
                 $techTransfer->attachment_paths = $attachmentPaths;
+            }
+
+            if ($techTransfer->status === 'rejected') {
+                $validatedData['status'] = 'pending';
+                $validatedData['remarks'] = null;
             }
 
             $techTransfer->update($validatedData);
@@ -299,19 +299,9 @@ class TechTransferController extends Controller
         try {
             $user = $request->user();
 
-            $query = TechTransfer::with(['college', 'college.campus'])
+            $query = TechTransfer::with(['college', 'college.campus', 'user'])
                 ->where('user_id', $user->id)
-                ->where('is_archived', false)
-                ->where('status', 'approved');
-
-            // You can still apply other filters like search, category, etc.
-            if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
-                });
-            }
+                ->where('is_archived', false);
 
             $techTransfers = $query->orderBy('created_at', 'desc')->get();
 

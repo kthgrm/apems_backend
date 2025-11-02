@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Award;
 use App\Traits\Reviewable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -202,6 +203,11 @@ class AwardController extends Controller
                 $award->attachment_paths = $attachmentPaths;
             }
 
+            if ($award->status === 'rejected') {
+                $validatedData['status'] = 'pending';
+                $validatedData['remarks'] = null;
+            }
+
             $award->update($validatedData);
             $award->load(['user', 'college', 'college.campus']);
 
@@ -272,5 +278,36 @@ class AwardController extends Controller
     public function review(Request $request, Award $award)
     {
         return $this->reviewItem($request, $award);
+    }
+
+    public function getUserAwards(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            $query = Award::with(['college', 'college.campus', 'user'])
+                ->where('user_id', $user->id)
+                ->where('is_archived', false);
+
+            $awards = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $awards,
+                'stats' => [
+                    'total' => $awards->count(),
+                    'approved' => $awards->where('status', 'approved')->count(),
+                    'pending' => $awards->where('status', 'pending')->count(),
+                    'rejected' => $awards->where('status', 'rejected')->count(),
+                ],
+                'message' => 'User awards retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve user awards',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

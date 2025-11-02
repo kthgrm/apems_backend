@@ -201,6 +201,11 @@ class EngagementController extends Controller
                 $engagement->attachment_paths = $attachmentPaths;
             }
 
+            if ($engagement->status === 'rejected') {
+                $validatedData['status'] = 'pending';
+                $validatedData['remarks'] = null;
+            }
+
             $engagement->update($validatedData);
             $engagement->load(['user', 'college', 'college.campus']);
 
@@ -270,5 +275,30 @@ class EngagementController extends Controller
     public function review(Request $request, Engagement $engagement)
     {
         return $this->reviewItem($request, $engagement);
+    }
+
+    public function getUserEngagements(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            $query = Engagement::with(['college', 'college.campus', 'user'])
+                ->where('user_id', $user->id)
+                ->where('is_archived', false);
+
+            $engagements = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $engagements,
+                'message' => 'User engagements retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve user engagements',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

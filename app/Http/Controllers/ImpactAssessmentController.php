@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ImpactAssessment;
 use App\Traits\Reviewable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -196,6 +197,11 @@ class ImpactAssessmentController extends Controller
                 $impactAssessment->attachment_paths = $attachmentPaths;
             }
 
+            if ($impactAssessment->status === 'rejected') {
+                $validatedData['status'] = 'pending';
+                $validatedData['remarks'] = null;
+            }
+
             $impactAssessment->update($validatedData);
             $impactAssessment->load(['user', 'techTransfer.college', 'techTransfer.college.campus']);
 
@@ -268,5 +274,30 @@ class ImpactAssessmentController extends Controller
     public function review(Request $request, ImpactAssessment $impactAssessment)
     {
         return $this->reviewItem($request, $impactAssessment);
+    }
+
+    public function getUserImpactAssessments(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            $query = ImpactAssessment::with(['techTransfer.college', 'techTransfer.college.campus', 'user'])
+                ->where('user_id', $user->id)
+                ->where('is_archived', false);
+
+            $impactAssessments = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $impactAssessments,
+                'message' => 'User impact assessments retrieved successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve user impact assessments',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -44,6 +44,7 @@ class TechTransfer extends Model
         'attachment_link',
         'status',
         'remarks',
+        'sdg_goals',
         'is_archived',
     ];
 
@@ -59,6 +60,7 @@ class TechTransfer extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'attachment_paths' => 'array',
+        'sdg_goals' => 'array',
     ];
 
     /**
