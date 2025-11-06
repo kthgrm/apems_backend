@@ -197,7 +197,7 @@
 
 <body>
     <div class="header">
-        <h1>Projects Report</h1>
+        <h1>Technology Transfer Report</h1>
         <p>Comprehensive overview of all system projects and their details</p>
         <p>Generated on {{ $generated_at }} by {{ $generated_by }}</p>
     </div>
