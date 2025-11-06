@@ -25,7 +25,7 @@ return new class extends Migration
         });
 
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignIdFor(College::class)->constrained()->restrictOnDelete();
+            $table->foreignIdFor(College::class)->nullable()->constrained()->restrictOnDelete();
         });
     }
 

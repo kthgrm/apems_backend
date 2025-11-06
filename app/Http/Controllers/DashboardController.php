@@ -21,19 +21,17 @@ class DashboardController extends Controller
     public function getAdminStats(Request $request): JsonResponse
     {
         $year = $request->get('year', date('Y'));
+        $campusId = $request->get('campus_id');
 
         // Overall statistics
         $overallStats = [
-            'total_users' => User::count(),
-            'total_projects' => TechTransfer::where('is_archived', false)->where('status', 'approved')->count(),
-            'total_awards' => Award::where('is_archived', false)->where('status', 'approved')->count(),
-            'total_engagements' => Engagement::where('is_archived', false)->where('status', 'approved')->count(),
-            'total_campuses' => Campus::count(),
-            'total_colleges' => College::count(),
+            'total_projects' => $this->getFilteredCount(TechTransfer::class, $year, $campusId),
+            'total_awards' => $this->getFilteredCount(Award::class, $year, $campusId),
+            'total_engagements' => $this->getFilteredCount(Engagement::class, $year, $campusId),
         ];
 
         // Monthly statistics for the selected year
-        $monthlyStats = $this->getMonthlyStats($year);
+        $monthlyStats = $this->getMonthlyStats($year, $campusId);
 
         // Campus statistics
         $campusStats = $this->getCampusStats($year);
@@ -59,9 +57,30 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get filtered count for a model based on year and optional campus
+     */
+    private function getFilteredCount(string $modelClass, string $year, ?string $campusId = null): int
+    {
+        $query = $modelClass::where('is_archived', false)
+            ->where('status', 'approved')
+            ->whereYear('created_at', $year);
+
+        if ($campusId) {
+            // Get college IDs for the selected campus
+            $campus = Campus::with('colleges')->find($campusId);
+            if ($campus) {
+                $collegeIds = $campus->colleges->pluck('id')->toArray();
+                $query->whereIn('college_id', $collegeIds);
+            }
+        }
+
+        return $query->count();
+    }
+
+    /**
      * Get monthly statistics for a specific year
      */
-    private function getMonthlyStats(string $year): array
+    private function getMonthlyStats(string $year, ?string $campusId = null): array
     {
         $months = [
             '01' => 'Jan',
@@ -79,25 +98,42 @@ class DashboardController extends Controller
         ];
 
         $monthlyData = [];
+        $collegeIds = null;
+
+        // Get college IDs if campus is selected
+        if ($campusId) {
+            $campus = Campus::with('colleges')->find($campusId);
+            if ($campus) {
+                $collegeIds = $campus->colleges->pluck('id')->toArray();
+            }
+        }
 
         foreach ($months as $monthNum => $monthName) {
             $startDate = "{$year}-{$monthNum}-01";
             $endDate = date('Y-m-t', strtotime($startDate));
 
-            $projects = TechTransfer::where('is_archived', false)
+            $projectsQuery = TechTransfer::where('is_archived', false)
                 ->where('status', 'approved')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count();
+                ->whereBetween('created_at', [$startDate, $endDate]);
 
-            $awards = Award::where('is_archived', false)
+            $awardsQuery = Award::where('is_archived', false)
                 ->where('status', 'approved')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count();
+                ->whereBetween('created_at', [$startDate, $endDate]);
 
-            $engagements = Engagement::where('is_archived', false)
+            $engagementsQuery = Engagement::where('is_archived', false)
                 ->where('status', 'approved')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count();
+                ->whereBetween('created_at', [$startDate, $endDate]);
+
+            // Apply campus filter if provided
+            if ($collegeIds) {
+                $projectsQuery->whereIn('college_id', $collegeIds);
+                $awardsQuery->whereIn('college_id', $collegeIds);
+                $engagementsQuery->whereIn('college_id', $collegeIds);
+            }
+
+            $projects = $projectsQuery->count();
+            $awards = $awardsQuery->count();
+            $engagements = $engagementsQuery->count();
 
             $monthlyData[] = [
                 'month' => $monthName,
@@ -210,5 +246,71 @@ class DashboardController extends Controller
             'modalities' => $totalModalityReviews,
             'impact_assessments' => $totalImpactAssessmentReviews,
         ];
+    }
+
+    /**
+     * Get college statistics for a specific campus
+     */
+    public function getCollegeStats(Request $request): JsonResponse
+    {
+        $year = $request->get('year', date('Y'));
+        $campusId = $request->get('campus_id');
+
+        if (!$campusId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Campus ID is required'
+            ], 400);
+        }
+
+        $campus = Campus::with('colleges')->find($campusId);
+
+        if (!$campus) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Campus not found'
+            ], 404);
+        }
+
+        $collegeStats = [];
+
+        foreach ($campus->colleges as $college) {
+            $totalProjects = TechTransfer::where('is_archived', false)
+                ->where('status', 'approved')
+                ->where('college_id', $college->id)
+                ->whereYear('created_at', $year)
+                ->count();
+
+            $totalAwards = Award::where('is_archived', false)
+                ->where('status', 'approved')
+                ->where('college_id', $college->id)
+                ->whereYear('created_at', $year)
+                ->count();
+
+            $totalEngagements = Engagement::where('is_archived', false)
+                ->where('status', 'approved')
+                ->where('college_id', $college->id)
+                ->whereYear('created_at', $year)
+                ->count();
+
+            $collegeStats[] = [
+                'id' => $college->id,
+                'name' => $college->name,
+                'code' => $college->code,
+                'total_projects' => $totalProjects,
+                'total_awards' => $totalAwards,
+                'total_engagements' => $totalEngagements,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'campus_name' => $campus->name,
+                'college_stats' => $collegeStats,
+                'selected_year' => $year
+            ],
+            'message' => 'College statistics retrieved successfully'
+        ], 200);
     }
 }

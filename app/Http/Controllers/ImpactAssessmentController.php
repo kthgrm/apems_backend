@@ -171,9 +171,9 @@ class ImpactAssessmentController extends Controller
 
         try {
             $validatedData = $request->validate([
-                'tech_transfer_id' => 'required|exists:tech_transfers,id',
-                'title' => 'required|string|max:255',
-                'description' => 'required|string|max:1000',
+                'tech_transfer_id' => 'sometimes|required|exists:tech_transfers,id',
+                'title' => 'sometimes|required|string|max:255',
+                'description' => 'sometimes|required|string|max:1000',
                 'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
             ]);
 

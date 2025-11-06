@@ -909,7 +909,7 @@ class ReportController extends Controller
     public function resolutions(Request $request): JsonResponse
     {
         try {
-            $query = Resolution::with(['user']);
+            $query = Resolution::with(['user'])->where('is_archived', false);
 
             // Apply search filter
             if ($request->filled('search')) {
@@ -966,7 +966,7 @@ class ReportController extends Controller
      */
     public function resolutionsPdf(Request $request)
     {
-        $query = Resolution::with(['user']);
+        $query = Resolution::with(['user'])->where('is_archived', false);
 
         // Apply same filters as the main report
         if ($request->filled('search')) {

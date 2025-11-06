@@ -42,6 +42,14 @@ class College extends Model
     }
 
     /**
+     * Get the users for this college.
+     */
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
+    /**
      * Get the tech transfers for this college.
      */
     public function techTransfers()

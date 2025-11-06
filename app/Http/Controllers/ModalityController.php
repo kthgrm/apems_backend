@@ -166,15 +166,15 @@ class ModalityController extends Controller
 
         try {
             $validatedData = $request->validate([
-                'tech_transfer_id' => 'required|exists:tech_transfers,id',
-                'modality' => 'required|string|max:255',
+                'tech_transfer_id' => 'sometimes|required|exists:tech_transfers,id',
+                'modality' => 'sometimes|required|string|max:255',
                 'tv_channel' => 'nullable|string|max:255',
                 'radio' => 'nullable|string|max:255',
                 'online_link' => 'nullable|string|max:255',
                 'time_air' => 'nullable|string|max:255',
-                'period' => 'required|string|max:255',
-                'partner_agency' => 'required|string|max:255',
-                'hosted_by' => 'required|string|max:255',
+                'period' => 'sometimes|required|string|max:255',
+                'partner_agency' => 'sometimes|required|string|max:255',
+                'hosted_by' => 'sometimes|required|string|max:255',
             ]);
 
             if ($modality->status === 'rejected') {

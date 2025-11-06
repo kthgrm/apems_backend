@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projects Report</title>
+    <title>Technology Transfer Report</title>
     <style>
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;

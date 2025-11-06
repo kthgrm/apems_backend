@@ -189,7 +189,7 @@ class TechTransferController extends Controller
                 'contact_phone' => 'nullable|string|max:255',
                 'copyright' => 'sometimes|required|string|in:yes,no,pending',
                 'ip_details' => 'nullable|string',
-                'sdg_goals' => 'required|array|min:1',
+                'sdg_goals' => 'sometimes|required|array|min:1',
                 'sdg_goals.*' => 'string',
                 'attachments.*' => 'file|mimes:pdf,doc,docx|max:10240',
                 'attachment_link' => 'nullable|url|max:255',

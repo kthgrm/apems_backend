@@ -168,14 +168,14 @@ class EngagementController extends Controller
     public function update(Request $request, Engagement $engagement): JsonResponse
     {
         $validatedData = $request->validate([
-            'agency_partner' => 'required|string|max:255',
-            'location' => 'required|string|max:255',
-            'activity_conducted' => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'number_of_participants' => 'required|integer|min:0',
-            'faculty_involved' => 'required|string|max:255',
-            'narrative' => 'required|string|max:5000',
+            'agency_partner' => 'sometimes|required|string|max:255',
+            'location' => 'sometimes|required|string|max:255',
+            'activity_conducted' => 'sometimes|required|string|max:255',
+            'start_date' => 'sometimes|required|date',
+            'end_date' => 'sometimes|required|date|after_or_equal:start_date',
+            'number_of_participants' => 'sometimes|required|integer|min:0',
+            'faculty_involved' => 'sometimes|required|string|max:255',
+            'narrative' => 'sometimes|required|string|max:5000',
             'attachments.*' => 'file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240',
             'attachment_link' => 'nullable|url|max:255',
         ]);

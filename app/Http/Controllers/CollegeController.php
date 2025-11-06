@@ -99,9 +99,9 @@ class CollegeController extends Controller
     public function update(Request $request, College $college)
     {
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:10,',
-            'campus_id' => 'required|exists:campuses,id',
+            'name' => 'sometimes|string|max:255',
+            'code' => 'sometimes|string|max:10',
+            'campus_id' => 'sometimes|exists:campuses,id',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // Max 2MB, optional
         ]);
 

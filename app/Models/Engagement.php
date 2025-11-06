@@ -4,10 +4,11 @@ namespace App\Models;
 
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Engagement extends Model
 {
-    use Auditable;
+    use HasFactory, Auditable;
 
     /**
      * Attributes excluded from audit logging.

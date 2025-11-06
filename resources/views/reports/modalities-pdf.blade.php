@@ -279,6 +279,7 @@
         <table>
             <thead>
                 <tr>
+                    <th>Extension Modality</th>
                     <th>Modality Type</th>
                     <th>Project</th>
                     <th>College</th>
@@ -294,6 +295,10 @@
             <tbody>
                 @forelse($modalities as $modality)
                     <tr>
+                        <td>
+                            {{ $modality->techTransfer->name ?? 'N/A' }}<br>
+                            <small style="color: #666;">ID: {{ $modality->id }}</small>
+                        </td>
                         <td>
                             @php
                                 $badgeClass = match (strtolower($modality->modality)) {

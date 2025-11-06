@@ -45,6 +45,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('auth')->name('auth.')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('/user', [AuthController::class, 'user'])->name('user');
+        Route::put('/password', [AuthController::class, 'updatePassword'])->name('password.update');
+        Route::put('/profile', [AuthController::class, 'updateProfile'])->name('profile.update');
     });
 
     // User management routes - specific routes MUST come before apiResource
@@ -97,6 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard routes
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('/admin-stats', [DashboardController::class, 'getAdminStats'])->name('admin-stats');
+        Route::get('/college-stats', [DashboardController::class, 'getCollegeStats'])->name('college-stats');
     });
 
     // User dashboard route
