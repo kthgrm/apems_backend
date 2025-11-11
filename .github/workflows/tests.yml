@@ -112,21 +112,26 @@ jobs:
           php -r "
           if (file_exists('junit.xml')) {
               \$xml = simplexml_load_file('junit.xml');
+              
+              // Get the root testsuite (first one)
+              \$rootSuite = \$xml->testsuite[0];
+              
               \$results = [
                   'php_version' => '${{ matrix.php }}',
                   'timestamp' => date('Y-m-d H:i:s'),
                   'summary' => [
-                      'total' => (int)\$xml['tests'],
-                      'assertions' => (int)\$xml['assertions'],
-                      'errors' => (int)\$xml['errors'],
-                      'failures' => (int)\$xml['failures'],
-                      'skipped' => (int)\$xml['skipped'],
-                      'time' => (float)\$xml['time']
+                      'total' => (int)\$rootSuite['tests'],
+                      'assertions' => (int)\$rootSuite['assertions'],
+                      'errors' => (int)\$rootSuite['errors'],
+                      'failures' => (int)\$rootSuite['failures'],
+                      'skipped' => (int)\$rootSuite['skipped'],
+                      'time' => (float)\$rootSuite['time']
                   ],
                   'test_suites' => []
               ];
               
-              foreach (\$xml->testsuite as \$suite) {
+              // Function to recursively process testsuites
+              function processTestSuite(\$suite) {
                   \$suiteData = [
                       'name' => (string)\$suite['name'],
                       'tests' => (int)\$suite['tests'],
@@ -138,28 +143,38 @@ jobs:
                       'test_cases' => []
                   ];
                   
-                  foreach (\$suite->testcase as \$testcase) {
-                      \$testData = [
-                          'name' => (string)\$testcase['name'],
-                          'class' => (string)\$testcase['class'],
-                          'time' => (float)\$testcase['time'],
-                          'status' => 'passed'
-                      ];
-                      
-                      if (isset(\$testcase->failure)) {
-                          \$testData['status'] = 'failed';
-                          \$testData['failure'] = (string)\$testcase->failure;
-                      } elseif (isset(\$testcase->error)) {
-                          \$testData['status'] = 'error';
-                          \$testData['error'] = (string)\$testcase->error;
-                      } elseif (isset(\$testcase->skipped)) {
-                          \$testData['status'] = 'skipped';
+                  // Process test cases in this suite
+                  if (isset(\$suite->testcase)) {
+                      foreach (\$suite->testcase as \$testcase) {
+                          \$testData = [
+                              'name' => (string)\$testcase['name'],
+                              'class' => (string)\$testcase['class'],
+                              'time' => (float)\$testcase['time'],
+                              'status' => 'passed'
+                          ];
+                          
+                          if (isset(\$testcase->failure)) {
+                              \$testData['status'] = 'failed';
+                              \$testData['failure'] = (string)\$testcase->failure;
+                          } elseif (isset(\$testcase->error)) {
+                              \$testData['status'] = 'error';
+                              \$testData['error'] = (string)\$testcase->error;
+                          } elseif (isset(\$testcase->skipped)) {
+                              \$testData['status'] = 'skipped';
+                          }
+                          
+                          \$suiteData['test_cases'][] = \$testData;
                       }
-                      
-                      \$suiteData['test_cases'][] = \$testData;
                   }
                   
-                  \$results['test_suites'][] = \$suiteData;
+                  return \$suiteData;
+              }
+              
+              // Process all nested testsuites
+              if (isset(\$rootSuite->testsuite)) {
+                  foreach (\$rootSuite->testsuite as \$suite) {
+                      \$results['test_suites'][] = processTestSuite(\$suite);
+                  }
               }
               
               file_put_contents('test-results.json', json_encode(\$results, JSON_PRETTY_PRINT));
