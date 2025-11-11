@@ -51,6 +51,7 @@ jobs:
       - name: Configure environment for testing
         run: |
           echo "APP_ENV=testing" >> .env
+          echo "APP_DEBUG=true" >> .env
           echo "APP_KEY=" >> .env
           echo "DB_CONNECTION=sqlite" >> .env
           echo "DB_DATABASE=:memory:" >> .env
@@ -59,6 +60,12 @@ jobs:
           echo "SESSION_DRIVER=array" >> .env
           echo "QUEUE_CONNECTION=sync" >> .env
           echo "MAIL_MAILER=array" >> .env
+          echo "BCRYPT_ROUNDS=4" >> .env
+          echo "AWS_ACCESS_KEY_ID=test" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=test" >> .env
+          echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+          echo "AWS_BUCKET=test-bucket" >> .env
+          echo "FILESYSTEM_DISK=local" >> .env
 
       - name: Generate application key
         run: php artisan key:generate

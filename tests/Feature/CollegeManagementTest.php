@@ -145,6 +145,8 @@ class CollegeManagementTest extends TestCase
      */
     public function test_admin_can_delete_college(): void
     {
+        Storage::fake('spaces');
+
         $admin = $this->authenticateAsAdmin(['password' => Hash::make('password')]);
         $college = College::factory()->create();
 
@@ -154,6 +156,10 @@ class CollegeManagementTest extends TestCase
         $response = $this->deleteJson("/api/colleges/{$college->id}", [
             'password' => 'password',
         ]);
+
+        if ($response->status() !== 200) {
+            dump($response->json());
+        }
 
         $response->assertStatus(200);
 
