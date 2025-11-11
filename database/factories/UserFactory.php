@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\College;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,7 +30,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'college_id' => null, // Nullable, can be set explicitly when needed
+            'college_id' => College::factory(),
             'role' => 'user',
             'is_active' => true,
             'remember_token' => Str::random(10),

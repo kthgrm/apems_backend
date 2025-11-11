@@ -170,6 +170,24 @@ class AwardController extends Controller
      */
     public function update(Request $request, Award $award)
     {
+        $user = $request->user();
+
+        // Check authorization: only admin or owner can update
+        if ($user->role !== 'admin' && $user->id !== $award->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        // Check if archived
+        if ($award->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Not Found',
+            ], 404);
+        }
+
         $validatedData = $request->validate([
             'award_name' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',

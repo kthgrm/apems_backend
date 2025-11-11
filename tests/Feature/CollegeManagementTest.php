@@ -5,7 +5,10 @@ namespace Tests\Feature\Admin;
 use App\Models\Campus;
 use App\Models\College;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CollegeManagementTest extends TestCase
@@ -40,6 +43,8 @@ class CollegeManagementTest extends TestCase
      */
     public function test_admin_can_create_college(): void
     {
+        Storage::fake('spaces');
+
         $admin = $this->authenticateAsAdmin();
         $campus = Campus::factory()->create();
 
@@ -47,10 +52,10 @@ class CollegeManagementTest extends TestCase
             'name' => 'College of Engineering',
             'campus_id' => $campus->id,
             'code' => 'COE',
-            'logo' => null,
+            'logo' => UploadedFile::fake()->create('college_logo.png', 100),
         ];
 
-        $response = $this->postJson('/api/colleges', $collegeData);
+        $response = $this->post('/api/colleges', $collegeData);
 
         $response->assertStatus(201);
 
@@ -111,6 +116,8 @@ class CollegeManagementTest extends TestCase
      */
     public function test_admin_can_update_college(): void
     {
+        Storage::fake('spaces');
+
         $admin = $this->authenticateAsAdmin();
         $campus = Campus::factory()->create();
         $college = College::factory()->create([
@@ -118,11 +125,11 @@ class CollegeManagementTest extends TestCase
             'campus_id' => $campus->id,
         ]);
 
-        $response = $this->putJson("/api/colleges/{$college->id}", [
+        $response = $this->put("/api/colleges/{$college->id}", [
             'name' => 'Updated College',
             'campus_id' => $campus->id,
-            'code' => $college->code,
-            'logo' => null,
+            'code' => 'UPD-COL',
+            'logo' => UploadedFile::fake()->create('college_logo2.png', 100),
         ]);
 
         $response->assertStatus(200);
@@ -138,13 +145,15 @@ class CollegeManagementTest extends TestCase
      */
     public function test_admin_can_delete_college(): void
     {
-        $admin = $this->authenticateAsAdmin();
+        $admin = $this->authenticateAsAdmin(['password' => Hash::make('password')]);
         $college = College::factory()->create();
 
         // Remove any users that depend on this college
         $college->users()->update(['college_id' => null]);
 
-        $response = $this->deleteJson("/api/colleges/{$college->id}");
+        $response = $this->deleteJson("/api/colleges/{$college->id}", [
+            'password' => 'password',
+        ]);
 
         $response->assertStatus(200);
 
@@ -187,14 +196,16 @@ class CollegeManagementTest extends TestCase
      */
     public function test_non_admin_cannot_create_college(): void
     {
+        Storage::fake('spaces');
+
         $user = $this->authenticateAsUser();
         $campus = Campus::factory()->create();
 
-        $response = $this->postJson('/api/colleges', [
+        $response = $this->post('/api/colleges', [
             'name' => 'New College',
             'campus_id' => $campus->id,
             'code' => 'NC',
-            'logo' => null,
+            'logo' => UploadedFile::fake()->create('college_logo3.png', 100),
         ]);
 
         // Should be 403 if authorization is implemented
@@ -206,14 +217,16 @@ class CollegeManagementTest extends TestCase
      */
     public function test_non_admin_cannot_update_college(): void
     {
+        Storage::fake('spaces');
+
         $user = $this->authenticateAsUser();
         $college = College::factory()->create();
 
-        $response = $this->putJson("/api/colleges/{$college->id}", [
+        $response = $this->put("/api/colleges/{$college->id}", [
             'name' => 'Updated College',
             'campus_id' => $college->campus_id,
             'code' => $college->code,
-            'logo' => null,
+            'logo' => UploadedFile::fake()->create('college_logo4.png', 100),
         ]);
 
         // TODO: Should be 403 when authorization middleware is added

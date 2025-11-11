@@ -4,7 +4,10 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Campus;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CampusManagementTest extends TestCase
@@ -37,15 +40,17 @@ class CampusManagementTest extends TestCase
      */
     public function test_admin_can_create_campus(): void
     {
+        Storage::fake('spaces');
+
         $admin = $this->authenticateAsAdmin();
 
         $campusData = [
             'name' => 'Main Campus',
-            'address' => '123 University Ave',
-            'logo' => null,
+            'logo' => UploadedFile::fake()->create('logo.png', 100),
         ];
 
-        $response = $this->postJson('/api/campuses', $campusData);
+        // use normal post so file uploads are handled
+        $response = $this->post('/api/campuses', $campusData);
 
         $response->assertStatus(201);
 
@@ -74,6 +79,8 @@ class CampusManagementTest extends TestCase
      */
     public function test_campus_name_must_be_unique(): void
     {
+        Storage::fake('spaces');
+
         $admin = $this->authenticateAsAdmin();
 
         Campus::factory()->create([
@@ -82,8 +89,7 @@ class CampusManagementTest extends TestCase
 
         $response = $this->postJson('/api/campuses', [
             'name' => 'Existing Campus',
-            'address' => '456 College St',
-            'logo' => null,
+            'logo' => UploadedFile::fake()->create('logo.png', 100),
         ]);
 
         $response->assertStatus(422)
@@ -94,15 +100,16 @@ class CampusManagementTest extends TestCase
      */
     public function test_admin_can_update_campus(): void
     {
+        Storage::fake('spaces');
+
         $admin = $this->authenticateAsAdmin();
         $campus = Campus::factory()->create([
             'name' => 'Old Campus',
         ]);
 
-        $response = $this->putJson("/api/campuses/{$campus->id}", [
+        $response = $this->put("/api/campuses/{$campus->id}", [
             'name' => 'Updated Campus',
-            'address' => 'New Address',
-            'logo' => $campus->logo,
+            'logo' => UploadedFile::fake()->create('logo2.png', 100),
         ]);
 
         $response->assertStatus(200);
@@ -118,13 +125,15 @@ class CampusManagementTest extends TestCase
      */
     public function test_admin_can_delete_campus(): void
     {
-        $admin = $this->authenticateAsAdmin();
+        $admin = $this->authenticateAsAdmin(['password' => Hash::make('password')]);
         $campus = Campus::factory()->create();
 
         // Remove any colleges that depend on this campus
         $campus->colleges()->delete();
 
-        $response = $this->deleteJson("/api/campuses/{$campus->id}");
+        $response = $this->deleteJson("/api/campuses/{$campus->id}", [
+            'password' => 'password',
+        ]);
 
         $response->assertStatus(200);
 
@@ -192,12 +201,13 @@ class CampusManagementTest extends TestCase
      */
     public function test_non_admin_cannot_create_campus(): void
     {
+        Storage::fake('spaces');
+
         $user = $this->authenticateAsUser();
 
-        $response = $this->postJson('/api/campuses', [
+        $response = $this->post('/api/campuses', [
             'name' => 'New Campus',
-            'address' => 'Test Address',
-            'logo' => null,
+            'logo' => UploadedFile::fake()->create('logo3.png', 100),
         ]);
 
         // Should be 403 if authorization is implemented
@@ -209,13 +219,14 @@ class CampusManagementTest extends TestCase
      */
     public function test_non_admin_cannot_update_campus(): void
     {
+        Storage::fake('spaces');
+
         $user = $this->authenticateAsUser();
         $campus = Campus::factory()->create();
 
-        $response = $this->putJson("/api/campuses/{$campus->id}", [
+        $response = $this->put("/api/campuses/{$campus->id}", [
             'name' => 'Updated Campus',
-            'address' => 'Address',
-            'logo' => null,
+            'logo' => UploadedFile::fake()->create('logo4.png', 100),
         ]);
 
         // TODO: Should be 403 when authorization middleware is added

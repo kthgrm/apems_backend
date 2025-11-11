@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('resolutions', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class)->constrained()->restrictOnDelete();
+            $table->string('title');
             $table->json('attachment_paths');
             $table->boolean('is_archived')->default(false);
             $table->timestamps();

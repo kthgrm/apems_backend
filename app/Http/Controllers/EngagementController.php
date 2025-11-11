@@ -167,6 +167,24 @@ class EngagementController extends Controller
      */
     public function update(Request $request, Engagement $engagement): JsonResponse
     {
+        $user = $request->user();
+
+        // Check authorization: only admin or owner can update
+        if ($user->role !== 'admin' && $user->id !== $engagement->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        // Check if archived
+        if ($engagement->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Not Found',
+            ], 404);
+        }
+
         $validatedData = $request->validate([
             'agency_partner' => 'sometimes|required|string|max:255',
             'location' => 'sometimes|required|string|max:255',

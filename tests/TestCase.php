@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use App\Models\User;
+use App\Models\College;
 use Laravel\Sanctum\Sanctum;
 
 abstract class TestCase extends BaseTestCase
@@ -17,6 +18,12 @@ abstract class TestCase extends BaseTestCase
      */
     protected function authenticateAsAdmin(array $attributes = []): User
     {
+        // Ensure college_id is set if not provided
+        if (!isset($attributes['college_id'])) {
+            $college = College::factory()->create();
+            $attributes['college_id'] = $college->id;
+        }
+
         $user = User::factory()->create(array_merge([
             'role' => 'admin',
             'is_active' => true,
@@ -35,6 +42,12 @@ abstract class TestCase extends BaseTestCase
      */
     protected function authenticateAsUser(array $attributes = []): User
     {
+        // Ensure college_id is set if not provided
+        if (!isset($attributes['college_id'])) {
+            $college = College::factory()->create();
+            $attributes['college_id'] = $college->id;
+        }
+
         $user = User::factory()->create(array_merge([
             'role' => 'user',
             'is_active' => true,

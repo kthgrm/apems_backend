@@ -28,7 +28,7 @@ class AwardFactory extends Factory
             'location' => fake()->city(),
             'awarding_body' => fake()->company(),
             'people_involved' => fake()->name() . ', ' . fake()->name(),
-            'attachment_path' => null,
+            'attachment_paths' => null,
             'attachment_link' => fake()->optional()->url(),
             'is_archived' => false,
             'status' => fake()->randomElement(['pending', 'approved', 'rejected']),

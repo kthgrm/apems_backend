@@ -71,8 +71,17 @@ class CampusController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // Check if user is admin
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action'
+            ], 403);
+        }
+
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:campuses,name',
             'logo' => 'required|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
@@ -126,6 +135,15 @@ class CampusController extends Controller
      */
     public function update(Request $request, Campus $campus): JsonResponse
     {
+        // Check if user is admin
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action'
+            ], 403);
+        }
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',

@@ -26,6 +26,7 @@ return new class extends Migration
             $table->date('end_date');
             $table->string('tags');
             $table->string('leader');
+            $table->string('members');
             $table->string('deliverables')->nullable();
 
             $table->string('agency_partner');

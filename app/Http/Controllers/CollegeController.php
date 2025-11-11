@@ -37,6 +37,15 @@ class CollegeController extends Controller
      */
     public function store(Request $request)
     {
+        // Check if user is admin
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action'
+            ], 403);
+        }
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:10',
@@ -98,6 +107,15 @@ class CollegeController extends Controller
      */
     public function update(Request $request, College $college)
     {
+        // Check if user is admin
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action'
+            ], 403);
+        }
+
         $validatedData = $request->validate([
             'name' => 'sometimes|string|max:255',
             'code' => 'sometimes|string|max:10',
