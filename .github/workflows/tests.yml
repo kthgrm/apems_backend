@@ -68,7 +68,7 @@ jobs:
 
       - name: Run Feature Tests with verbose output
         run: |
-          php artisan test --testsuite=Feature --coverage-html coverage-html --coverage-clover coverage.xml --log-junit junit.xml --stop-on-failure --parallel=false
+          php artisan test --testsuite=Feature --coverage-html coverage-html --coverage-clover coverage.xml --log-junit junit.xml --stop-on-failure
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
