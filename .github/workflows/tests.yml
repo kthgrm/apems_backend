@@ -106,17 +106,237 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
+      - name: Parse Test Results to JSON
+        if: always()
+        run: |
+          php -r "
+          if (file_exists('junit.xml')) {
+              \$xml = simplexml_load_file('junit.xml');
+              \$results = [
+                  'php_version' => '${{ matrix.php }}',
+                  'timestamp' => date('Y-m-d H:i:s'),
+                  'summary' => [
+                      'total' => (int)\$xml['tests'],
+                      'assertions' => (int)\$xml['assertions'],
+                      'errors' => (int)\$xml['errors'],
+                      'failures' => (int)\$xml['failures'],
+                      'skipped' => (int)\$xml['skipped'],
+                      'time' => (float)\$xml['time']
+                  ],
+                  'test_suites' => []
+              ];
+              
+              foreach (\$xml->testsuite as \$suite) {
+                  \$suiteData = [
+                      'name' => (string)\$suite['name'],
+                      'tests' => (int)\$suite['tests'],
+                      'assertions' => (int)\$suite['assertions'],
+                      'errors' => (int)\$suite['errors'],
+                      'failures' => (int)\$suite['failures'],
+                      'skipped' => (int)\$suite['skipped'],
+                      'time' => (float)\$suite['time'],
+                      'test_cases' => []
+                  ];
+                  
+                  foreach (\$suite->testcase as \$testcase) {
+                      \$testData = [
+                          'name' => (string)\$testcase['name'],
+                          'class' => (string)\$testcase['class'],
+                          'time' => (float)\$testcase['time'],
+                          'status' => 'passed'
+                      ];
+                      
+                      if (isset(\$testcase->failure)) {
+                          \$testData['status'] = 'failed';
+                          \$testData['failure'] = (string)\$testcase->failure;
+                      } elseif (isset(\$testcase->error)) {
+                          \$testData['status'] = 'error';
+                          \$testData['error'] = (string)\$testcase->error;
+                      } elseif (isset(\$testcase->skipped)) {
+                          \$testData['status'] = 'skipped';
+                      }
+                      
+                      \$suiteData['test_cases'][] = \$testData;
+                  }
+                  
+                  \$results['test_suites'][] = \$suiteData;
+              }
+              
+              file_put_contents('test-results.json', json_encode(\$results, JSON_PRETTY_PRINT));
+          }
+          "
+
+      - name: Generate HTML Test Report
+        if: always()
+        run: |
+          php -r "
+          if (file_exists('test-results.json')) {
+              \$data = json_decode(file_get_contents('test-results.json'), true);
+              \$html = '<!DOCTYPE html>
+          <html lang=\"en\">
+          <head>
+              <meta charset=\"UTF-8\">
+              <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+              <title>Test Results - PHP ' . \$data['php_version'] . '</title>
+              <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+                  .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .header h1 { font-size: 28px; margin-bottom: 10px; }
+                  .header p { opacity: 0.9; font-size: 14px; }
+                  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; padding: 30px; background: #fafafa; }
+                  .stat { background: white; padding: 20px; border-radius: 6px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                  .stat-value { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
+                  .stat-label { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+                  .stat.total .stat-value { color: #667eea; }
+                  .stat.passed .stat-value { color: #48bb78; }
+                  .stat.failed .stat-value { color: #f56565; }
+                  .stat.errors .stat-value { color: #ed8936; }
+                  .stat.skipped .stat-value { color: #a0aec0; }
+                  .stat.time .stat-value { color: #4299e1; font-size: 24px; }
+                  .tests { padding: 30px; }
+                  .test-suite { margin-bottom: 30px; }
+                  .test-suite-header { background: #f7fafc; padding: 15px 20px; border-left: 4px solid #667eea; margin-bottom: 15px; border-radius: 4px; }
+                  .test-suite-title { font-size: 18px; font-weight: 600; color: #2d3748; }
+                  .test-suite-stats { font-size: 13px; color: #718096; margin-top: 5px; }
+                  .test-case { padding: 12px 20px; border-left: 3px solid #e2e8f0; margin-bottom: 8px; background: #f9fafb; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+                  .test-case.passed { border-left-color: #48bb78; background: #f0fff4; }
+                  .test-case.failed { border-left-color: #f56565; background: #fff5f5; }
+                  .test-case.error { border-left-color: #ed8936; background: #fffaf0; }
+                  .test-case.skipped { border-left-color: #a0aec0; background: #f7fafc; }
+                  .test-name { font-size: 14px; color: #2d3748; flex: 1; }
+                  .test-status { font-size: 12px; padding: 4px 12px; border-radius: 12px; font-weight: 600; text-transform: uppercase; }
+                  .test-status.passed { background: #c6f6d5; color: #22543d; }
+                  .test-status.failed { background: #fed7d7; color: #742a2a; }
+                  .test-status.error { background: #feebc8; color: #7c2d12; }
+                  .test-status.skipped { background: #e2e8f0; color: #4a5568; }
+                  .test-time { color: #718096; font-size: 12px; margin-left: 15px; }
+                  .failure-details { margin-top: 10px; padding: 15px; background: #fff; border-radius: 4px; border: 1px solid #e2e8f0; }
+                  .failure-details pre { font-size: 12px; color: #742a2a; white-space: pre-wrap; word-wrap: break-word; }
+                  .footer { padding: 20px; text-align: center; color: #718096; font-size: 13px; border-top: 1px solid #e2e8f0; }
+              </style>
+          </head>
+          <body>
+              <div class=\"container\">
+                  <div class=\"header\">
+                      <h1>🧪 Feature Test Results</h1>
+                      <p>PHP Version: ' . \$data['php_version'] . ' • Generated: ' . \$data['timestamp'] . '</p>
+                  </div>
+                  
+                  <div class=\"summary\">
+                      <div class=\"stat total\">
+                          <div class=\"stat-value\">' . \$data['summary']['total'] . '</div>
+                          <div class=\"stat-label\">Total Tests</div>
+                      </div>
+                      <div class=\"stat passed\">
+                          <div class=\"stat-value\">' . (\$data['summary']['total'] - \$data['summary']['failures'] - \$data['summary']['errors'] - \$data['summary']['skipped']) . '</div>
+                          <div class=\"stat-label\">Passed</div>
+                      </div>
+                      <div class=\"stat failed\">
+                          <div class=\"stat-value\">' . \$data['summary']['failures'] . '</div>
+                          <div class=\"stat-label\">Failed</div>
+                      </div>
+                      <div class=\"stat errors\">
+                          <div class=\"stat-value\">' . \$data['summary']['errors'] . '</div>
+                          <div class=\"stat-label\">Errors</div>
+                      </div>
+                      <div class=\"stat skipped\">
+                          <div class=\"stat-value\">' . \$data['summary']['skipped'] . '</div>
+                          <div class=\"stat-label\">Skipped</div>
+                      </div>
+                      <div class=\"stat time\">
+                          <div class=\"stat-value\">' . round(\$data['summary']['time'], 2) . 's</div>
+                          <div class=\"stat-label\">Duration</div>
+                      </div>
+                  </div>
+                  
+                  <div class=\"tests\">';
+              
+              foreach (\$data['test_suites'] as \$suite) {
+                  \$html .= '<div class=\"test-suite\">
+                      <div class=\"test-suite-header\">
+                          <div class=\"test-suite-title\">' . htmlspecialchars(\$suite['name']) . '</div>
+                          <div class=\"test-suite-stats\">' . \$suite['tests'] . ' tests • ' . round(\$suite['time'], 2) . 's</div>
+                      </div>';
+                  
+                  foreach (\$suite['test_cases'] as \$test) {
+                      \$html .= '<div class=\"test-case ' . \$test['status'] . '\">
+                          <span class=\"test-name\">' . htmlspecialchars(\$test['name']) . '</span>
+                          <span class=\"test-time\">' . round(\$test['time'], 3) . 's</span>
+                          <span class=\"test-status ' . \$test['status'] . '\">' . \$test['status'] . '</span>
+                      </div>';
+                      
+                      if (isset(\$test['failure']) || isset(\$test['error'])) {
+                          \$message = isset(\$test['failure']) ? \$test['failure'] : \$test['error'];
+                          \$html .= '<div class=\"failure-details\"><pre>' . htmlspecialchars(\$message) . '</pre></div>';
+                      }
+                  }
+                  
+                  \$html .= '</div>';
+              }
+              
+              \$html .= '</div>
+                  <div class=\"footer\">
+                      Generated by GitHub Actions • APEMS Backend Test Suite
+                  </div>
+              </div>
+          </body>
+          </html>';
+              
+              file_put_contents('test-report.html', \$html);
+          }
+          "
+
+      - name: Upload JSON Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-json-php-${{ matrix.php }}
+          path: test-results.json
+          retention-days: 30
+
+      - name: Upload HTML Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-html-php-${{ matrix.php }}
+          path: test-report.html
+          retention-days: 30
+
       - name: Generate Test Summary
         if: always()
         run: |
-          echo "# Feature Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "PHP Version: ${{ matrix.php }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f junit.xml ]; then
-            echo "## Test Summary" >> $GITHUB_STEP_SUMMARY
-            echo '```xml' >> $GITHUB_STEP_SUMMARY
-            head -n 50 junit.xml >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ -f test-results.json ]; then
+            echo "# 🧪 Feature Test Results - PHP ${{ matrix.php }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Parse and display summary
+            php -r "
+            \$data = json_decode(file_get_contents('test-results.json'), true);
+            \$passed = \$data['summary']['total'] - \$data['summary']['failures'] - \$data['summary']['errors'] - \$data['summary']['skipped'];
+            \$passRate = \$data['summary']['total'] > 0 ? round((\$passed / \$data['summary']['total']) * 100, 1) : 0;
+            
+            echo \"## Summary\n\n\";
+            echo \"| Metric | Value |\n\";
+            echo \"|--------|-------|\n\";
+            echo \"| ✅ Passed | \$passed |\n\";
+            echo \"| ❌ Failed | {\$data['summary']['failures']} |\n\";
+            echo \"| ⚠️ Errors | {\$data['summary']['errors']} |\n\";
+            echo \"| ⏭️ Skipped | {\$data['summary']['skipped']} |\n\";
+            echo \"| 📊 Total | {\$data['summary']['total']} |\n\";
+            echo \"| ⏱️ Duration | \" . round(\$data['summary']['time'], 2) . \"s |\n\";
+            echo \"| 📈 Pass Rate | \$passRate% |\n\n\";
+            
+            if (\$data['summary']['failures'] > 0 || \$data['summary']['errors'] > 0) {
+                echo \"## ❌ Failed Tests\n\n\";
+                foreach (\$data['test_suites'] as \$suite) {
+                    foreach (\$suite['test_cases'] as \$test) {
+                        if (\$test['status'] == 'failed' || \$test['status'] == 'error') {
+                            echo \"- \" . \$test['name'] . \"\n\";
+                        }
+                    }
+                }
+            }
+            " >> $GITHUB_STEP_SUMMARY
           fi
