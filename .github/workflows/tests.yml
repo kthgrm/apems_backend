@@ -344,10 +344,10 @@ jobs:
             -X POST \
             -d "{\"client_id\":\"${XRAY_CLIENT_ID}\",\"client_secret\":\"${XRAY_CLIENT_SECRET}\"}" \
             https://xray.cloud.getxray.app/api/v2/authenticate)
-          
+
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
-          
+
           if [ "$HTTP_CODE" -eq 200 ]; then
             # Remove quotes from token
             TOKEN=$(echo "$BODY" | tr -d '"')
