@@ -332,81 +332,29 @@ jobs:
             " >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Extract Jira Issue Key
-        id: jira-key
-        if: always()
-        run: |
-          # Try to extract from commit message first
-          ISSUE_KEY=$(git log -1 --pretty=%B | grep -oE '[A-Z]+-[0-9]+' | head -1 || echo "")
-
-          # If not found and this is a PR, try PR title
-          if [ -z "$ISSUE_KEY" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
-            ISSUE_KEY=$(echo "${{ github.event.pull_request.title }}" | grep -oE '[A-Z]+-[0-9]+' | head -1 || echo "")
-          fi
-
-          echo "issue_key=$ISSUE_KEY" >> $GITHUB_OUTPUT
-          if [ -n "$ISSUE_KEY" ]; then
-            echo "Found Jira issue: $ISSUE_KEY"
-          else
-            echo "No Jira issue key found in commit message or PR title"
-          fi
-
-      - name: Post Test Results to Jira
-        if: always() && steps.jira-key.outputs.issue_key != ''
+      - name: Authenticate with Xray Cloud
+        id: xray-auth
         env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-          ISSUE_KEY: ${{ steps.jira-key.outputs.issue_key }}
+          XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
+          XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
         run: |
-          if [ -f test-results.json ]; then
-            # Generate comment body
-            php -r "
-            \$data = json_decode(file_get_contents('test-results.json'), true);
-            \$passed = \$data['summary']['total'] - \$data['summary']['failures'] - \$data['summary']['errors'] - \$data['summary']['skipped'];
-            \$passRate = \$data['summary']['total'] > 0 ? round((\$passed / \$data['summary']['total']) * 100, 1) : 0;
-            
-            \$status = \$data['summary']['failures'] == 0 && \$data['summary']['errors'] == 0 ? '✅ PASSED' : '❌ FAILED';
-            
-            \$comment = \"h3. {\$status} Test Results - PHP 8.2\n\n\";
-            \$comment .= \"*Build:* [${{ github.run_number }}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}]\n\";
-            \$comment .= \"*Branch:* {{${{ github.ref_name }}}}\n\";
-            \$comment .= \"*Commit:* [{{\" . substr('${{ github.sha }}', 0, 7) . \"}}|${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}]\n\n\";
-            
-            \$comment .= \"|| Metric || Value ||\n\";
-            \$comment .= \"| ✅ Passed | {\$passed} |\n\";
-            \$comment .= \"| ❌ Failed | {\$data['summary']['failures']} |\n\";
-            \$comment .= \"| ⚠️ Errors | {\$data['summary']['errors']} |\n\";
-            \$comment .= \"| ⏭️ Skipped | {\$data['summary']['skipped']} |\n\";
-            \$comment .= \"| 📊 Total | {\$data['summary']['total']} |\n\";
-            \$comment .= \"| ⏱️ Duration | \" . round(\$data['summary']['time'], 2) . \"s |\n\";
-            \$comment .= \"| 📈 Pass Rate | {\$passRate}% |\n\n\";
-            
-            if (\$data['summary']['failures'] > 0 || \$data['summary']['errors'] > 0) {
-                \$comment .= \"h4. Failed Tests\n\n\";
-                foreach (\$data['test_suites'] as \$suite) {
-                    foreach (\$suite['test_cases'] as \$test) {
-                        if (\$test['status'] == 'failed' || \$test['status'] == 'error') {
-                            \$comment .= \"* {{\" . \$test['name'] . \"}}\n\";
-                        }
-                    }
-                }
-                \$comment .= \"\n\";
-            }
-            
-            \$comment .= \"[View Full Report|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}]\";
-            
-            file_put_contents('jira-comment.txt', \$comment);
-            "
-            
-            # Post comment to Jira
-            COMMENT_BODY=$(cat jira-comment.txt)
-            
-            curl -X POST \
-              -H "Content-Type: application/json" \
-              -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
-              -d "{\"body\": $(echo "$COMMENT_BODY" | jq -Rs .)}" \
-              "${JIRA_BASE_URL}/rest/api/2/issue/${ISSUE_KEY}/comment"
-            
-            echo "Posted test results to Jira issue: ${ISSUE_KEY}"
+          TOKEN=$(curl -s -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"client_id\":\"${XRAY_CLIENT_ID}\",\"client_secret\":\"${XRAY_CLIENT_SECRET}\"}" \
+            https://xray.cloud.getxray.app/api/v2/authenticate)
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Import JUnit to Xray Cloud
+        if: always()
+        env:
+          XRAY_TOKEN: ${{ steps.xray-auth.outputs.token }}
+          PROJECT_KEY: AP
+        run: |
+          if [ -f junit.xml ]; then
+            curl -s -H "Content-Type: multipart/form-data" \
+              -H "Authorization: Bearer ${XRAY_TOKEN}" \
+              -F "file=@junit.xml" \
+              "https://xray.cloud.getxray.app/api/v2/import/execution/junit?projectKey=${PROJECT_KEY}"
+          else
+            echo "No junit.xml found"
           fi
