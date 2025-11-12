@@ -363,7 +363,7 @@ jobs:
         if: always() && steps.xray-auth.outcome == 'success'
         env:
           XRAY_TOKEN: ${{ steps.xray-auth.outputs.token }}
-          PROJECT_KEY: AP
+          PROJECT_KEY: Q1
         run: |
           if [ -f junit.xml ]; then
             echo "Importing junit.xml to Xray Cloud (Project: ${PROJECT_KEY})..."
