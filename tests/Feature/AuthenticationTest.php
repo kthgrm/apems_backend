@@ -199,8 +199,6 @@ class AuthenticationTest extends TestCase
 
     /**
      * Test that user can logout successfully.
-     * Note: This test verifies the logout endpoint works, but Sanctum tokens
-     * remain valid in the database after logout unless explicitly revoked.
      */
     public function test_user_can_logout_and_receive_confirmation(): void
     {
