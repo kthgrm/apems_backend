@@ -208,7 +208,6 @@ class AuthenticationTest extends TestCase
             'is_active' => true,
         ]);
 
-        // Login to get a token
         $loginResponse = $this->postJson('/api/auth/login', [
             'email' => $user->email,
             'password' => 'password',
