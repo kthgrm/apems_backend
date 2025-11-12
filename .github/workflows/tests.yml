@@ -334,27 +334,57 @@ jobs:
 
       - name: Authenticate with Xray Cloud
         id: xray-auth
+        if: always()
         env:
           XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
           XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
         run: |
-          TOKEN=$(curl -s -H "Content-Type: application/json" \
+          echo "Authenticating with Xray Cloud..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" \
             -X POST \
             -d "{\"client_id\":\"${XRAY_CLIENT_ID}\",\"client_secret\":\"${XRAY_CLIENT_SECRET}\"}" \
             https://xray.cloud.getxray.app/api/v2/authenticate)
-          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            # Remove quotes from token
+            TOKEN=$(echo "$BODY" | tr -d '"')
+            echo "token=$TOKEN" >> $GITHUB_OUTPUT
+            echo "✅ Authentication successful"
+          else
+            echo "❌ Authentication failed with HTTP $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
 
       - name: Import JUnit to Xray Cloud
-        if: always()
+        if: always() && steps.xray-auth.outcome == 'success'
         env:
           XRAY_TOKEN: ${{ steps.xray-auth.outputs.token }}
           PROJECT_KEY: AP
         run: |
           if [ -f junit.xml ]; then
-            curl -s -H "Content-Type: multipart/form-data" \
+            echo "Importing junit.xml to Xray Cloud (Project: ${PROJECT_KEY})..."
+            
+            RESPONSE=$(curl -s -w "\n%{http_code}" \
+              -H "Content-Type: application/xml" \
               -H "Authorization: Bearer ${XRAY_TOKEN}" \
-              -F "file=@junit.xml" \
-              "https://xray.cloud.getxray.app/api/v2/import/execution/junit?projectKey=${PROJECT_KEY}"
+              --data-binary @junit.xml \
+              "https://xray.cloud.getxray.app/api/v2/import/execution/junit?projectKey=${PROJECT_KEY}")
+            
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            
+            if [ "$HTTP_CODE" -eq 200 ]; then
+              echo "✅ Import successful!"
+              echo "Response: $BODY"
+            else
+              echo "❌ Import failed with HTTP $HTTP_CODE"
+              echo "Response: $BODY"
+              exit 1
+            fi
           else
-            echo "No junit.xml found"
+            echo "⚠️ No junit.xml found to import"
           fi
